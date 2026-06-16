@@ -1,58 +1,75 @@
-"""Abstract fixture data provider protocol and shared types."""
+"""Abstract fixture data provider protocol and shared domain models."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
+
+FixtureStatus = Literal["scheduled", "live", "finished"]
+
+
+@dataclass(frozen=True)
+class Team:
+    """National team identity."""
+
+    team_id: str
+    name: str
+    code: str | None = None
+
+
+@dataclass(frozen=True)
+class Fixture:
+    """World Cup fixture normalized across providers."""
+
+    fixture_id: str
+    home_team_id: str
+    away_team_id: str
+    home_team_name: str
+    away_team_name: str
+    kickoff_utc: datetime
+    status: FixtureStatus
+    competition: str
+    stage: str
+    venue: str | None
+    home_goals: int | None
+    away_goals: int | None
 
 
 @dataclass(frozen=True)
 class MatchResult:
-    """Final or in-progress score for a fixture."""
+    """Historical national-team match result for modeling."""
 
+    match_id: str
+    date: datetime
+    home_team_id: str
+    away_team_id: str
     home_goals: int
     away_goals: int
-    status: str = "FT"
-
-
-@dataclass(frozen=True)
-class FixtureRecord:
-    """Normalized fixture representation used across providers."""
-
-    fixture_id: int
-    competition_id: int
-    season: int
-    round: str
-    kickoff_utc: datetime
-    home_team_id: int
-    home_team_name: str
-    away_team_id: int
-    away_team_name: str
-    venue: Optional[str] = None
-    result: Optional[MatchResult] = None
+    is_neutral: bool
+    competition: str
 
 
 @runtime_checkable
 class FixtureProvider(Protocol):
-    """Protocol for fetching World Cup fixtures and results."""
+    """Protocol for fetching World Cup fixtures and national-team match history."""
 
     async def get_fixtures(
         self,
-        competition_id: int,
-        season: int,
-    ) -> list[FixtureRecord]:
-        """Return all fixtures for a competition and season."""
+        status: str | None = None,
+        limit: int = 100,
+    ) -> list[Fixture]:
+        """Return World Cup fixtures, optionally filtered by status."""
         ...
 
-    async def get_fixture(self, fixture_id: int) -> Optional[FixtureRecord]:
-        """Return a single fixture by ID, or ``None`` if not found."""
-        ...
-
-    async def get_team_fixtures(
+    async def get_team_results(
         self,
-        team_id: int,
-        season: int,
-    ) -> list[FixtureRecord]:
-        """Return fixtures involving a specific team for a season."""
+        team_id: str,
+        limit: int = 30,
+    ) -> list[MatchResult]:
+        """Return recent finished matches for a national team."""
+        ...
+
+    async def get_fixture_by_id(self, fixture_id: str) -> Fixture | None:
+        """Return a single fixture by ID, or ``None`` if not found."""
         ...

@@ -32,6 +32,10 @@ dev = [
 where = ["."]
 include = ["fifa26_engine*"]
 
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

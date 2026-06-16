@@ -3,33 +3,41 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-
-class MatchResultSchema(BaseModel):
-    """Score and status for a completed or live fixture."""
-
-    home_goals: int = Field(ge=0)
-    away_goals: int = Field(ge=0)
-    status: str = "FT"
+FixtureStatusSchema = Literal["scheduled", "live", "finished"]
 
 
 class FixtureResponse(BaseModel):
     """Serialized fixture returned by the API."""
 
-    fixture_id: int
-    competition_id: int
-    season: int
-    round: str
-    kickoff_utc: datetime
-    home_team_id: int
+    fixture_id: str
+    home_team_id: str
+    away_team_id: str
     home_team_name: str
-    away_team_id: int
     away_team_name: str
+    kickoff_utc: datetime
+    status: FixtureStatusSchema
+    competition: str
+    stage: str
     venue: Optional[str] = None
-    result: Optional[MatchResultSchema] = None
+    home_goals: Optional[int] = Field(default=None, ge=0)
+    away_goals: Optional[int] = Field(default=None, ge=0)
+
+
+class MatchResultResponse(BaseModel):
+    """Serialized historical match result."""
+
+    match_id: str
+    date: datetime
+    home_team_id: str
+    away_team_id: str
+    home_goals: int = Field(ge=0)
+    away_goals: int = Field(ge=0)
+    is_neutral: bool
+    competition: str
 
 
 class PredictionProbabilities(BaseModel):
@@ -43,7 +51,7 @@ class PredictionProbabilities(BaseModel):
 class MatchPredictionResponse(BaseModel):
     """Prediction payload for a single fixture."""
 
-    fixture_id: int
+    fixture_id: str
     home_team_name: str
     away_team_name: str
     probabilities: PredictionProbabilities
