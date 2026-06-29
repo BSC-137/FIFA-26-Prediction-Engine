@@ -87,12 +87,23 @@ Open [http://localhost:8000/docs](http://localhost:8000/docs) for interactive AP
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Liveness check + data source (`mock` or `api-football`) |
+| `GET` | `/status` | Refresh timestamps, provider mode, fixture counts by status |
 | `GET` | `/fixtures` | List fixtures (`?status=scheduled\|live\|finished`, `?limit=100`) |
 | `GET` | `/fixtures/refresh` | Bust fixture + prediction caches, return fresh list |
 | `GET` | `/predict/{fixture_id}` | Full prediction for a stored fixture |
 | `GET` | `/predict` | Manual matchup (`home_team_id`, `away_team_id`, `kickoff_utc`, …) |
 
 Responses are cached in-memory: **fixtures 5 min**, **predictions 10 min** (configurable via `.env`).
+
+### Automatic refresh
+
+A background asyncio task refreshes fixture caches every **5 minutes** by default (`REFRESH_INTERVAL_SECONDS=300`):
+
+- Warms `scheduled`, `live`, and `finished` lists
+- Clears stale prediction caches when live scores may have changed
+- Never blocks API request handlers; failures are logged and exposed via `GET /status`
+
+Disable with `REFRESH_ENABLED=false` in `.env`.
 
 ### Sample prediction response
 
@@ -138,13 +149,14 @@ Finished fixtures include actual `home_goals` / `away_goals` in the `fixture` bl
 
 ### Refresh behavior
 
-`GET /fixtures/refresh` clears:
+`GET /fixtures/refresh` manually triggers the same refresh cycle as the background task:
 
-1. API-level fixture list cache
-2. API-level prediction cache
-3. Underlying provider cache (when using API-Football)
+1. API-level fixture list cache cleared
+2. API-level prediction cache cleared
+3. Underlying provider cache cleared (when using API-Football)
+4. Fresh data loaded for all status buckets
 
-The next `/fixtures` or `/predict` call fetches fresh data.
+Check `GET /status` for `last_fixture_refresh_utc`, `fixture_counts`, and any `last_refresh_error`.
 
 ## Project layout
 

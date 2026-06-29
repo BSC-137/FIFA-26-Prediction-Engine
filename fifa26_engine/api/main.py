@@ -10,17 +10,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fifa26_engine.api.deps import (
     AppState,
-    build_app_state,
     get_app_state,
     get_prediction_service,
     lifespan,
 )
 from fifa26_engine.api.mappers import breakdown_to_prediction_response, fixture_to_response
-from fifa26_engine.api.schemas import FixturesListResponse, PredictionResponse
+from fifa26_engine.api.schemas import FixturesListResponse, PredictionResponse, StatusResponse
 from fifa26_engine.data.provider import Fixture
 from fifa26_engine.data.stadiums import enrich_fixture, resolve_stadium
 from fifa26_engine.models.temporal import resolve_as_of_utc
 from fifa26_engine.services.prediction_service import PredictionService
+from fifa26_engine.services.refresh_service import _cache_key, load_fixtures_into_cache
 from fifa26_engine.utils.logging import configure_logging
 
 configure_logging()
@@ -53,6 +53,28 @@ async def health_check(request: Request) -> dict[str, str]:
     return {"status": "ok", "source": state.data_source}
 
 
+@app.get("/status", response_model=StatusResponse)
+async def system_status(request: Request) -> StatusResponse:
+    """Return background refresh timestamps and fixture counts."""
+    state = get_app_state(request)
+    metadata = (
+        state.refresh_service.metadata
+        if state.refresh_service is not None
+        else None
+    )
+    return StatusResponse(
+        last_fixture_refresh_utc=metadata.last_fixture_refresh_utc if metadata else None,
+        last_prediction_cache_clear_utc=(
+            metadata.last_prediction_cache_clear_utc if metadata else None
+        ),
+        provider_mode=state.provider_mode,  # type: ignore[arg-type]
+        fixture_counts=metadata.fixture_counts if metadata else {},
+        refresh_interval_seconds=state.settings.refresh_interval_seconds,
+        refresh_enabled=state.settings.refresh_enabled,
+        last_refresh_error=metadata.last_refresh_error if metadata else None,
+    )
+
+
 async def _fetch_fixtures(
     state: AppState,
     service: PredictionService,
@@ -61,7 +83,7 @@ async def _fetch_fixtures(
     *,
     force_refresh: bool = False,
 ) -> FixturesListResponse:
-    cache_key = f"fixtures:{status}:{limit}"
+    cache_key = _cache_key(status, limit)
     if not force_refresh:
         cached = state.fixtures_cache.get(cache_key)
         if cached is not None:
@@ -70,19 +92,7 @@ async def _fetch_fixtures(
     if force_refresh:
         state.invalidate_fixture_caches()
 
-    fixtures = await service.provider.get_fixtures(status=status, limit=limit)
-    refreshed_at = datetime.now(timezone.utc)
-    response = FixturesListResponse(
-        items=[fixture_to_response(fixture) for fixture in fixtures],
-        refreshed_at=refreshed_at,
-        source=state.data_source,
-    )
-    state.fixtures_cache.set(
-        cache_key,
-        response,
-        ttl=state.settings.fixtures_cache_ttl_seconds,
-    )
-    return response
+    return await load_fixtures_into_cache(state, status, limit)
 
 
 @app.get("/fixtures", response_model=FixturesListResponse)
@@ -107,6 +117,12 @@ async def refresh_fixtures(
     """Bust fixture caches and return a freshly loaded fixture list."""
     state = get_app_state(request)
     state.invalidate_prediction_caches()
+    if state.refresh_service is not None:
+        await state.refresh_service.refresh_all()
+        cache_key = _cache_key(status, limit)
+        cached = state.fixtures_cache.get(cache_key)
+        if cached is not None:
+            return cached  # type: ignore[return-value]
     return await _fetch_fixtures(state, service, status, limit, force_refresh=True)
 
 

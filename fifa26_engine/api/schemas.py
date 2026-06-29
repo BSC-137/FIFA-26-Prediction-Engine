@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 FixtureStatusSchema = Literal["scheduled", "live", "finished"]
 PitchTypeSchema = Literal["grass", "hybrid", "artificial", "unknown"]
+ProviderModeSchema = Literal["mock", "api"]
 MODEL_VERSION = "0.2.0"
 
 
@@ -126,3 +127,15 @@ class FixturesListResponse(BaseModel):
     items: list[FixtureResponse]
     refreshed_at: datetime
     source: str
+
+
+class StatusResponse(BaseModel):
+    """Background refresh and provider status."""
+
+    last_fixture_refresh_utc: Optional[datetime] = None
+    last_prediction_cache_clear_utc: Optional[datetime] = None
+    provider_mode: ProviderModeSchema
+    fixture_counts: dict[str, int]
+    refresh_interval_seconds: int
+    refresh_enabled: bool
+    last_refresh_error: Optional[str] = None

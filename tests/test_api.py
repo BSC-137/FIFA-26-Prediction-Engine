@@ -14,7 +14,11 @@ from fifa26_engine.services.prediction_service import PredictionService
 
 @pytest.fixture
 def client() -> TestClient:
-    settings = Settings(use_mock_data=True, weather_provider="mock")
+    settings = Settings(
+        use_mock_data=True,
+        weather_provider="mock",
+        refresh_enabled=False,
+    )
     provider = MockFixtureProvider()
     service = PredictionService(
         provider=provider,
@@ -102,3 +106,13 @@ def test_predict_manual_matchup(client: TestClient) -> None:
 def test_predict_unknown_fixture_404(client: TestClient) -> None:
     response = client.get("/predict/does-not-exist")
     assert response.status_code == 404
+
+
+def test_status_endpoint(client: TestClient) -> None:
+    response = client.get("/status")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["provider_mode"] == "mock"
+    assert body["refresh_enabled"] is False
+    assert "fixture_counts" in body
+    assert body["refresh_interval_seconds"] >= 30

@@ -88,6 +88,15 @@ class Settings(BaseSettings):
         ge=0,
         description="TTL for cached /predict API responses (default 10 minutes).",
     )
+    refresh_interval_seconds: int = Field(
+        default=300,
+        ge=30,
+        description="Background fixture cache refresh interval in seconds.",
+    )
+    refresh_enabled: bool = Field(
+        default=True,
+        description="Enable automatic background fixture cache refresh.",
+    )
 
     @field_validator("api_football_key", mode="before")
     @classmethod
