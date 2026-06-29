@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal, Protocol, runtime_checkable
 
 FixtureStatus = Literal["scheduled", "live", "finished"]
+PitchType = Literal["grass", "hybrid", "artificial", "unknown"]
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,19 @@ class Team:
     team_id: str
     name: str
     code: str | None = None
+
+
+@dataclass(frozen=True)
+class WeatherConditions:
+    """Weather forecast or observed conditions at kickoff."""
+
+    temperature_c: float | None
+    humidity_pct: float | None
+    wind_speed_kmh: float | None
+    precipitation_mm: float | None
+    weather_code: str | None
+    is_indoor: bool = False
+    fetched_at_utc: datetime = field(default_factory=lambda: datetime.now())
 
 
 @dataclass(frozen=True)
@@ -34,6 +48,11 @@ class Fixture:
     venue: str | None
     home_goals: int | None
     away_goals: int | None
+    venue_city: str | None = None
+    venue_country: str | None = None
+    stadium_lat: float | None = None
+    stadium_lon: float | None = None
+    pitch_type: PitchType = "unknown"
 
 
 @dataclass(frozen=True)
@@ -48,6 +67,10 @@ class MatchResult:
     away_goals: int
     is_neutral: bool
     competition: str
+    temperature_c: float | None = None
+    humidity_pct: float | None = None
+    precipitation_mm: float | None = None
+    pitch_type: PitchType | None = None
 
 
 @runtime_checkable

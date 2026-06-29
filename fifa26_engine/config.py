@@ -1,6 +1,7 @@
 """Application configuration loaded from environment variables."""
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -67,6 +68,15 @@ class Settings(BaseSettings):
         default=3,
         ge=1,
         description="Maximum retry attempts for transient API-Football failures.",
+    )
+    weather_provider: Literal["openmeteo", "mock"] = Field(
+        default="mock",
+        description="Weather data source: Open-Meteo (free) or deterministic mock.",
+    )
+    weather_cache_ttl_seconds: int = Field(
+        default=1800,
+        ge=0,
+        description="TTL for cached weather forecast responses.",
     )
 
     @field_validator("api_football_key", mode="before")

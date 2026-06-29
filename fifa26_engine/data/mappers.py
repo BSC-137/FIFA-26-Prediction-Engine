@@ -5,7 +5,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from fifa26_engine.data.provider import Fixture, FixtureStatus, MatchResult
+from fifa26_engine.data.provider import Fixture, FixtureStatus, MatchResult, PitchType
+from fifa26_engine.data.stadiums import enrich_fixture
 
 # API-Football short status codes (https://www.api-football.com/documentation-v3#tag/Fixtures)
 _LIVE_STATUSES = frozenset({"1H", "HT", "2H", "ET", "BT", "P", "LIVE", "INT"})
@@ -55,7 +56,7 @@ def map_api_fixture(item: dict[str, Any]) -> Fixture:
     home_goals = _parse_goals(goals.get("home"))
     away_goals = _parse_goals(goals.get("away"))
 
-    return Fixture(
+    mapped = Fixture(
         fixture_id=str(fixture["id"]),
         home_team_id=str(teams["home"]["id"]),
         away_team_id=str(teams["away"]["id"]),
@@ -68,7 +69,10 @@ def map_api_fixture(item: dict[str, Any]) -> Fixture:
         venue=venue_block.get("name"),
         home_goals=home_goals,
         away_goals=away_goals,
+        venue_city=venue_block.get("city"),
+        venue_country=venue_block.get("country"),
     )
+    return enrich_fixture(mapped)
 
 
 def map_api_fixture_to_match_result(item: dict[str, Any]) -> MatchResult | None:
@@ -86,6 +90,9 @@ def map_api_fixture_to_match_result(item: dict[str, Any]) -> MatchResult | None:
     if home_goals is None or away_goals is None:
         return None
 
+    venue_block = item.get("venue") or fixture.get("venue") or {}
+    pitch: PitchType = "unknown"
+
     return MatchResult(
         match_id=str(fixture["id"]),
         date=_parse_datetime(fixture["date"]),
@@ -98,4 +105,5 @@ def map_api_fixture_to_match_result(item: dict[str, Any]) -> MatchResult | None:
             league.get("type"),
         ),
         competition=league.get("name", "Unknown"),
+        pitch_type=pitch,
     )

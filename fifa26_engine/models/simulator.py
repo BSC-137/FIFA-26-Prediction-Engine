@@ -15,10 +15,13 @@ Assumptions
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
 from scipy.stats import poisson
+
+if TYPE_CHECKING:
+    from fifa26_engine.data.provider import WeatherConditions
 
 DEFAULT_MAX_GOALS = 10
 DEFAULT_DIXON_COLES_RHO = -0.13
@@ -57,6 +60,22 @@ class SimulationResult:
     matrix: np.ndarray
     markets: MarketProbabilities
     dixon_coles_rho: float
+
+
+@dataclass(frozen=True)
+class PredictionBreakdown:
+    """End-to-end prediction with transparent adjustment trail."""
+
+    simulation: SimulationResult
+    base_home_xg: float
+    base_away_xg: float
+    adjusted_home_xg: float
+    adjusted_away_xg: float
+    weather_conditions: WeatherConditions | None
+    weather_home_modifier: float
+    weather_away_modifier: float
+    weather_labels: list[str]
+    adjustments_applied: list[str]
 
 
 class MatchSimulator:

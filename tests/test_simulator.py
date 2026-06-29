@@ -109,7 +109,7 @@ async def test_predict_fixture_markets_integration() -> None:
     assert fixture is not None
 
     simulation = await predict_fixture_markets(fixture, provider)
-    assert simulation.home_xg > 0
-    assert simulation.away_xg > 0
-    assert simulation.matrix.sum() == pytest.approx(1.0, abs=1e-9)
-    assert 0.0 < simulation.markets["home_win"] < 1.0
+    assert simulation.base_home_xg > 0
+    assert simulation.adjusted_home_xg > 0
+    assert simulation.simulation.matrix.sum() == pytest.approx(1.0, abs=1e-9)
+    assert 0.0 < simulation.simulation.markets["home_win"] < 1.0
