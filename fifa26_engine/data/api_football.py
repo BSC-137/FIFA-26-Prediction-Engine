@@ -64,6 +64,10 @@ class ApiFootballProvider:
             await self._client.aclose()
             self._client = None
 
+    def clear_cache(self) -> None:
+        """Clear the internal response cache (used by /fixtures/refresh)."""
+        self._cache.clear()
+
     async def __aenter__(self) -> ApiFootballProvider:
         return self
 

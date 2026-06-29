@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from fifa26_engine.api.mappers import fixture_to_response
 from fifa26_engine.api.schemas import (
     FixtureResponse,
     MatchPredictionResponse,
@@ -161,22 +162,18 @@ class PredictionService:
         self._dixon_coles_rho = dixon_coles_rho
         self._weather_provider = weather_provider or create_weather_provider(self._settings)
 
+    @property
+    def provider(self) -> FixtureProvider:
+        """Underlying fixture data provider."""
+        return self._provider
+
+    async def get_fixture(self, fixture_id: str) -> Fixture | None:
+        """Return a fixture by ID from the configured provider."""
+        return await self._provider.get_fixture_by_id(fixture_id)
+
     @staticmethod
     def _fixture_to_response(fixture: Fixture) -> FixtureResponse:
-        return FixtureResponse(
-            fixture_id=fixture.fixture_id,
-            home_team_id=fixture.home_team_id,
-            away_team_id=fixture.away_team_id,
-            home_team_name=fixture.home_team_name,
-            away_team_name=fixture.away_team_name,
-            kickoff_utc=fixture.kickoff_utc,
-            status=fixture.status,
-            competition=fixture.competition,
-            stage=fixture.stage,
-            venue=fixture.venue,
-            home_goals=fixture.home_goals,
-            away_goals=fixture.away_goals,
-        )
+        return fixture_to_response(fixture)
 
     async def list_fixtures(
         self,

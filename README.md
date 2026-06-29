@@ -67,13 +67,84 @@ Set `WEATHER_PROVIDER=openmeteo` in `.env` for live forecasts (no API key requir
 
 ## Running the API
 
-The FastAPI application entry point is a placeholder. Once implemented, start the server with:
+Start the server with the helper script or uvicorn directly:
 
 ```bash
+# Windows
+.\scripts\run_api.ps1
+
+# macOS / Linux
+chmod +x scripts/run_api.sh && ./scripts/run_api.sh
+
+# Or manually
 uvicorn fifa26_engine.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Open `http://localhost:8000/docs` for interactive API documentation.
+Open [http://localhost:8000/docs](http://localhost:8000/docs) for interactive API documentation.
+
+### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Liveness check + data source (`mock` or `api-football`) |
+| `GET` | `/fixtures` | List fixtures (`?status=scheduled\|live\|finished`, `?limit=100`) |
+| `GET` | `/fixtures/refresh` | Bust fixture + prediction caches, return fresh list |
+| `GET` | `/predict/{fixture_id}` | Full prediction for a stored fixture |
+| `GET` | `/predict` | Manual matchup (`home_team_id`, `away_team_id`, `kickoff_utc`, …) |
+
+Responses are cached in-memory: **fixtures 5 min**, **predictions 10 min** (configurable via `.env`).
+
+### Sample prediction response
+
+```json
+{
+  "fixture": {
+    "fixture_id": "wc26-005",
+    "home_team_name": "Brazil",
+    "away_team_name": "Serbia",
+    "status": "scheduled",
+    "venue": "SoFi Stadium",
+    "pitch_type": "grass"
+  },
+  "expected_goals": {
+    "base_home": 1.42,
+    "base_away": 0.98,
+    "adjusted_home": 1.45,
+    "adjusted_away": 0.96
+  },
+  "probabilities": {
+    "home_win": 0.48,
+    "draw": 0.27,
+    "away_win": 0.25,
+    "btts_yes": 0.52,
+    "btts_no": 0.48,
+    "over_under": { "over_2_5": 0.44, "under_2_5": 0.56 },
+    "top_scores": [{ "score": "1-0", "probability": 0.12 }]
+  },
+  "weather": {
+    "temperature_c": 28.0,
+    "weather_code": "heat"
+  },
+  "pitch_type": "grass",
+  "adjustments_applied": [],
+  "weather_explanations": ["home_affinity:hot_dry_grass"],
+  "model_version": "0.2.0",
+  "generated_at": "2026-06-29T12:00:00Z",
+  "as_of_utc": "2026-06-13T19:00:00Z"
+}
+```
+
+Finished fixtures include actual `home_goals` / `away_goals` in the `fixture` block alongside the model prediction.
+
+### Refresh behavior
+
+`GET /fixtures/refresh` clears:
+
+1. API-level fixture list cache
+2. API-level prediction cache
+3. Underlying provider cache (when using API-Football)
+
+The next `/fixtures` or `/predict` call fetches fresh data.
 
 ## Project layout
 

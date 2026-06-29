@@ -8,6 +8,8 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
 FixtureStatusSchema = Literal["scheduled", "live", "finished"]
+PitchTypeSchema = Literal["grass", "hybrid", "artificial", "unknown"]
+MODEL_VERSION = "0.2.0"
 
 
 class FixtureResponse(BaseModel):
@@ -23,6 +25,9 @@ class FixtureResponse(BaseModel):
     competition: str
     stage: str
     venue: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_country: Optional[str] = None
+    pitch_type: PitchTypeSchema = "unknown"
     home_goals: Optional[int] = Field(default=None, ge=0)
     away_goals: Optional[int] = Field(default=None, ge=0)
 
@@ -41,7 +46,7 @@ class MatchResultResponse(BaseModel):
 
 
 class PredictionProbabilities(BaseModel):
-    """Match outcome probabilities."""
+    """Match outcome probabilities (legacy 1X2 schema)."""
 
     home_win: float = Field(ge=0.0, le=1.0)
     draw: float = Field(ge=0.0, le=1.0)
@@ -49,7 +54,7 @@ class PredictionProbabilities(BaseModel):
 
 
 class MatchPredictionResponse(BaseModel):
-    """Prediction payload for a single fixture."""
+    """Legacy prediction payload for a single fixture."""
 
     fixture_id: str
     home_team_name: str
@@ -57,4 +62,67 @@ class MatchPredictionResponse(BaseModel):
     probabilities: PredictionProbabilities
     expected_home_goals: Optional[float] = None
     expected_away_goals: Optional[float] = None
-    model_version: str = "0.1.0-scaffold"
+    model_version: str = MODEL_VERSION
+
+
+class WeatherResponse(BaseModel):
+    """Weather forecast at kickoff."""
+
+    temperature_c: Optional[float] = None
+    humidity_pct: Optional[float] = None
+    wind_speed_kmh: Optional[float] = None
+    precipitation_mm: Optional[float] = None
+    weather_code: Optional[str] = None
+    is_indoor: bool = False
+    fetched_at_utc: Optional[datetime] = None
+
+
+class ExpectedGoalsResponse(BaseModel):
+    """Base and adjusted expected goals."""
+
+    base_home: float = Field(ge=0.0)
+    base_away: float = Field(ge=0.0)
+    adjusted_home: float = Field(ge=0.0)
+    adjusted_away: float = Field(ge=0.0)
+
+
+class TopScoreResponse(BaseModel):
+    """Exact scoreline probability."""
+
+    score: str
+    probability: float = Field(ge=0.0, le=1.0)
+
+
+class MarketProbabilitiesResponse(BaseModel):
+    """Full market probabilities for a fixture."""
+
+    home_win: float = Field(ge=0.0, le=1.0)
+    draw: float = Field(ge=0.0, le=1.0)
+    away_win: float = Field(ge=0.0, le=1.0)
+    btts_yes: float = Field(ge=0.0, le=1.0)
+    btts_no: float = Field(ge=0.0, le=1.0)
+    over_under: dict[str, float]
+    top_scores: list[TopScoreResponse]
+
+
+class PredictionResponse(BaseModel):
+    """Full prediction payload with weather and adjustment transparency."""
+
+    fixture: FixtureResponse
+    expected_goals: ExpectedGoalsResponse
+    probabilities: MarketProbabilitiesResponse
+    weather: Optional[WeatherResponse] = None
+    pitch_type: PitchTypeSchema = "unknown"
+    adjustments_applied: list[str] = Field(default_factory=list)
+    weather_explanations: list[str] = Field(default_factory=list)
+    model_version: str = MODEL_VERSION
+    generated_at: datetime
+    as_of_utc: datetime
+
+
+class FixturesListResponse(BaseModel):
+    """Paginated fixture list with cache metadata."""
+
+    items: list[FixtureResponse]
+    refreshed_at: datetime
+    source: str

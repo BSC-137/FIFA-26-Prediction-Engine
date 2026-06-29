@@ -78,6 +78,16 @@ class Settings(BaseSettings):
         ge=0,
         description="TTL for cached weather forecast responses.",
     )
+    fixtures_cache_ttl_seconds: int = Field(
+        default=300,
+        ge=0,
+        description="TTL for cached /fixtures API responses (default 5 minutes).",
+    )
+    predictions_cache_ttl_seconds: int = Field(
+        default=600,
+        ge=0,
+        description="TTL for cached /predict API responses (default 10 minutes).",
+    )
 
     @field_validator("api_football_key", mode="before")
     @classmethod
