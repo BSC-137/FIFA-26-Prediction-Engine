@@ -129,6 +129,20 @@ class FixtureRefreshService:
                 counts["live"],
                 counts["finished"],
             )
+
+            if self._state.ledger_service is not None:
+                try:
+                    stored = await self._state.ledger_service.sync_ledger(all_fixtures)
+                    logger.info("Ledger sync complete: %s new predictions stored", stored)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Ledger sync failed: %s", exc)
+                    if self.metadata.last_refresh_error is None:
+                        self.metadata.last_refresh_error = f"ledger: {exc}"
+
+            try:
+                await self._state.accuracy_service.recompute(all_fixtures)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Accuracy recompute failed: %s", exc)
         except Exception as exc:  # noqa: BLE001 — keep background loop alive
             self.metadata.last_refresh_error = str(exc)
             logger.exception("Fixture refresh cycle failed")

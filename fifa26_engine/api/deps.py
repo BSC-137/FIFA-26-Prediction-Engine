@@ -12,8 +12,11 @@ from fastapi import FastAPI, Request
 
 from fifa26_engine.config import Settings, get_settings
 from fifa26_engine.data.weather_provider import create_weather_provider
+from fifa26_engine.services.accuracy_service import AccuracyService
+from fifa26_engine.services.ledger_service import LedgerService
 from fifa26_engine.services.prediction_service import PredictionService, create_fixture_provider
 from fifa26_engine.services.refresh_service import FixtureRefreshService
+from fifa26_engine.storage.prediction_store import PredictionStore
 from fifa26_engine.utils.cache import TTLCache
 from fifa26_engine.utils.logging import configure_logging, get_logger
 
@@ -26,6 +29,9 @@ class AppState:
 
     settings: Settings
     prediction_service: PredictionService
+    prediction_store: PredictionStore
+    ledger_service: LedgerService
+    accuracy_service: AccuracyService
     fixtures_cache: TTLCache[str, object] = field(default_factory=TTLCache)
     predictions_cache: TTLCache[str, object] = field(default_factory=TTLCache)
     refresh_service: FixtureRefreshService | None = None
@@ -88,9 +94,15 @@ def build_app_state(settings: Settings | None = None) -> AppState:
         settings=resolved,
         weather_provider=weather_provider,
     )
+    store = PredictionStore(resolved.predictions_db_path)
+    ledger = LedgerService(service, store)
+    accuracy = AccuracyService(ledger, service)
     state = AppState(
         settings=resolved,
         prediction_service=service,
+        prediction_store=store,
+        ledger_service=ledger,
+        accuracy_service=accuracy,
         fixtures_cache=TTLCache(default_ttl_seconds=resolved.fixtures_cache_ttl_seconds),
         predictions_cache=TTLCache(default_ttl_seconds=resolved.predictions_cache_ttl_seconds),
     )
@@ -133,3 +145,11 @@ def get_settings_dep(request: Request) -> Settings:
 def get_prediction_service(request: Request) -> PredictionService:
     """FastAPI dependency for the prediction service."""
     return request.app.state.app_state.prediction_service
+
+
+def get_ledger_service(request: Request) -> LedgerService:
+    return request.app.state.app_state.ledger_service
+
+
+def get_accuracy_service(request: Request) -> AccuracyService:
+    return request.app.state.app_state.accuracy_service

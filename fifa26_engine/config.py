@@ -97,6 +97,14 @@ class Settings(BaseSettings):
         default=True,
         description="Enable automatic background fixture cache refresh.",
     )
+    predictions_db_path: str = Field(
+        default="predictions.db",
+        description="SQLite file path for the prediction ledger.",
+    )
+    accuracy_admin_key: str = Field(
+        default="",
+        description="Optional key required for POST /accuracy/recompute (empty = allow in dev).",
+    )
 
     @field_validator("api_football_key", mode="before")
     @classmethod

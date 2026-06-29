@@ -5,20 +5,34 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from fifa26_engine.api.accuracy_mappers import (
+    evaluated_fixture_to_response,
+    report_to_summary_response,
+    summary_to_response,
+)
 from fifa26_engine.api.deps import (
     AppState,
+    get_accuracy_service,
     get_app_state,
     get_prediction_service,
     lifespan,
 )
 from fifa26_engine.api.mappers import breakdown_to_prediction_response, fixture_to_response
-from fifa26_engine.api.schemas import FixturesListResponse, PredictionResponse, StatusResponse
+from fifa26_engine.api.schemas import (
+    AccuracyFixturesListResponse,
+    AccuracyRecomputeResponse,
+    AccuracySummaryResponse,
+    FixturesListResponse,
+    PredictionResponse,
+    StatusResponse,
+)
 from fifa26_engine.data.provider import Fixture
 from fifa26_engine.data.stadiums import enrich_fixture, resolve_stadium
 from fifa26_engine.models.temporal import resolve_as_of_utc
+from fifa26_engine.services.accuracy_service import AccuracyService
 from fifa26_engine.services.prediction_service import PredictionService
 from fifa26_engine.services.refresh_service import _cache_key, load_fixtures_into_cache
 from fifa26_engine.utils.logging import configure_logging
@@ -72,6 +86,54 @@ async def system_status(request: Request) -> StatusResponse:
         refresh_interval_seconds=state.settings.refresh_interval_seconds,
         refresh_enabled=state.settings.refresh_enabled,
         last_refresh_error=metadata.last_refresh_error if metadata else None,
+        ledger_prediction_count=state.prediction_store.count_predictions(),
+    )
+
+
+@app.get("/accuracy/summary", response_model=AccuracySummaryResponse)
+async def accuracy_summary(
+    request: Request,
+    accuracy_service: AccuracyService = Depends(get_accuracy_service),
+) -> AccuracySummaryResponse:
+    """Return aggregate accuracy metrics from the stored prediction ledger."""
+    summary = await accuracy_service.get_summary()
+    return summary_to_response(summary)
+
+
+@app.get("/accuracy/fixtures", response_model=AccuracyFixturesListResponse)
+async def accuracy_fixtures(
+    request: Request,
+    accuracy_service: AccuracyService = Depends(get_accuracy_service),
+    limit: int = Query(default=50, ge=1, le=500),
+) -> AccuracyFixturesListResponse:
+    """Return per-fixture stored predictions vs actual finished results."""
+    items = await accuracy_service.get_fixture_evaluations(limit=limit)
+    report = accuracy_service.cached_report
+    computed_at = report.computed_at if report else datetime.now(timezone.utc)
+    return AccuracyFixturesListResponse(
+        items=[evaluated_fixture_to_response(item) for item in items],
+        computed_at=computed_at,
+    )
+
+
+@app.post("/accuracy/recompute", response_model=AccuracyRecomputeResponse)
+async def accuracy_recompute(
+    request: Request,
+    accuracy_service: AccuracyService = Depends(get_accuracy_service),
+    service: PredictionService = Depends(get_prediction_service),
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
+) -> AccuracyRecomputeResponse:
+    """Recompute accuracy metrics from the ledger (does not refit models)."""
+    state = get_app_state(request)
+    admin_key = state.settings.accuracy_admin_key
+    if admin_key and x_admin_key != admin_key:
+        raise HTTPException(status_code=403, detail="Invalid or missing X-Admin-Key")
+
+    fixtures = await service.provider.get_fixtures(limit=500)
+    report = await accuracy_service.recompute(fixtures)
+    return AccuracyRecomputeResponse(
+        summary=report_to_summary_response(report),
+        evaluated_count=len(report.fixtures),
     )
 
 

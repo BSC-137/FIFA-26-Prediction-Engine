@@ -139,3 +139,62 @@ class StatusResponse(BaseModel):
     refresh_interval_seconds: int
     refresh_enabled: bool
     last_refresh_error: Optional[str] = None
+    ledger_prediction_count: int = 0
+
+
+class CalibrationBinResponse(BaseModel):
+    """Home-win probability calibration bucket."""
+
+    bin_start: float
+    bin_end: float
+    count: int
+    mean_predicted: float
+    actual_rate: float
+
+
+class AccuracySummaryResponse(BaseModel):
+    """Aggregate accuracy metrics from the prediction ledger."""
+
+    n_matches: int
+    accuracy_1x2: float
+    brier_score: float
+    log_loss: float
+    mae_total_goals: float
+    calibration_bins: list[CalibrationBinResponse]
+    computed_at: datetime
+    model_version: str
+
+
+class AccuracyFixtureResponse(BaseModel):
+    """Per-fixture stored prediction vs actual result."""
+
+    fixture_id: str
+    kickoff_utc: datetime
+    as_of_utc: datetime
+    predicted_outcome: str
+    actual_outcome: str
+    correct_1x2: bool
+    p_home: float
+    p_draw: float
+    p_away: float
+    actual_home_goals: int
+    actual_away_goals: int
+    expected_total_goals: float
+    actual_total_goals: int
+    brier: float
+    log_loss: float
+    total_goals_error: float
+
+
+class AccuracyFixturesListResponse(BaseModel):
+    """List of per-fixture accuracy evaluations."""
+
+    items: list[AccuracyFixtureResponse]
+    computed_at: datetime
+
+
+class AccuracyRecomputeResponse(BaseModel):
+    """Response from POST /accuracy/recompute."""
+
+    summary: AccuracySummaryResponse
+    evaluated_count: int

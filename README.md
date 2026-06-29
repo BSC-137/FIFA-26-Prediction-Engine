@@ -156,7 +156,26 @@ Finished fixtures include actual `home_goals` / `away_goals` in the `fixture` bl
 3. Underlying provider cache cleared (when using API-Football)
 4. Fresh data loaded for all status buckets
 
-Check `GET /status` for `last_fixture_refresh_utc`, `fixture_counts`, and any `last_refresh_error`.
+Check `GET /status` for `last_fixture_refresh_utc`, `fixture_counts`, `ledger_prediction_count`, and any `last_refresh_error`.
+
+## Accuracy & Leakage Policy
+
+The engine maintains a **prediction ledger** (`predictions.db`) of pre-kickoff forecasts:
+
+1. **Before kickoff** — `LedgerService` stores one canonical row per fixture (`as_of_utc <= kickoff_utc`)
+2. **Training cutoff** — strength model uses only matches with `result.date < as_of_utc`
+3. **After full-time** — accuracy evaluation reads **stored** predictions only; never refits including that match
+4. **Finished fixtures** — `sync_ledger` skips generation; `/accuracy/*` compares ledger vs actual scores
+
+### Accuracy endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/accuracy/summary` | 1X2 accuracy, Brier, log loss, goal MAE, calibration bins |
+| `GET` | `/accuracy/fixtures` | Per-finished-match prediction vs actual |
+| `POST` | `/accuracy/recompute` | Recompute metrics from ledger (optional `X-Admin-Key`) |
+
+Ledger sync runs automatically during background fixture refresh and on `GET /fixtures/refresh`.
 
 ## Project layout
 

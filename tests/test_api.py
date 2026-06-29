@@ -13,11 +13,12 @@ from fifa26_engine.services.prediction_service import PredictionService
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(tmp_path) -> TestClient:
     settings = Settings(
         use_mock_data=True,
         weather_provider="mock",
         refresh_enabled=False,
+        predictions_db_path=str(tmp_path / "api_test.db"),
     )
     provider = MockFixtureProvider()
     service = PredictionService(
@@ -116,3 +117,20 @@ def test_status_endpoint(client: TestClient) -> None:
     assert body["refresh_enabled"] is False
     assert "fixture_counts" in body
     assert body["refresh_interval_seconds"] >= 30
+    assert "ledger_prediction_count" in body
+
+
+def test_accuracy_endpoints(client: TestClient) -> None:
+    # Seed ledger via recompute path (may have 0 evaluated if no stored preds yet)
+    recompute = client.post("/accuracy/recompute")
+    assert recompute.status_code == 200
+
+    summary = client.get("/accuracy/summary")
+    assert summary.status_code == 200
+    body = summary.json()
+    assert "accuracy_1x2" in body
+    assert "brier_score" in body
+
+    fixtures = client.get("/accuracy/fixtures", params={"limit": 10})
+    assert fixtures.status_code == 200
+    assert "items" in fixtures.json()
