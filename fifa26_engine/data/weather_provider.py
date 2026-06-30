@@ -134,18 +134,29 @@ class OpenMeteoWeatherProvider:
             return cached
 
         client = await self._get_client()
-        response = await client.get(
-            OPEN_METEO_URL,
-            params={
-                "latitude": lat,
-                "longitude": lon,
-                "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
-                "start_date": kickoff.date().isoformat(),
-                "end_date": kickoff.date().isoformat(),
-                "timezone": "UTC",
-            },
-        )
-        response.raise_for_status()
+        try:
+            response = await client.get(
+                OPEN_METEO_URL,
+                params={
+                    "latitude": lat,
+                    "longitude": lon,
+                    "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
+                    "start_date": kickoff.date().isoformat(),
+                    "end_date": kickoff.date().isoformat(),
+                    "timezone": "UTC",
+                },
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            logger.warning("Open-Meteo forecast unavailable for %s: %s", cache_key, exc)
+            return WeatherConditions(
+                temperature_c=None,
+                humidity_pct=None,
+                wind_speed_kmh=None,
+                precipitation_mm=None,
+                weather_code=None,
+                fetched_at_utc=datetime.now(timezone.utc),
+            )
         payload = response.json()
         hourly = payload.get("hourly", {})
         times = hourly.get("time", [])

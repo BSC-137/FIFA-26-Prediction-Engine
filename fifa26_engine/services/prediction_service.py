@@ -19,6 +19,12 @@ from fifa26_engine.data.provider import Fixture, FixtureProvider, MatchResult
 from fifa26_engine.data.stadiums import enrich_fixture
 from fifa26_engine.data.weather_provider import WeatherProvider, create_weather_provider
 from fifa26_engine.models.adjustments import AdjustmentEngine
+from fifa26_engine.models.calibration import (
+    build_prediction_warnings,
+    calibrate_base_xg,
+    count_team_matches,
+)
+from fifa26_engine.models.knockout import KnockoutMarkets, compute_knockout_markets
 from fifa26_engine.models.simulator import MatchSimulator, PredictionBreakdown, SimulationResult
 from fifa26_engine.models.strength import FixturePrediction, TeamStrengthModel
 from fifa26_engine.models.temporal import filter_results_before, resolve_as_of_utc
@@ -87,8 +93,15 @@ async def predict_fixture_markets(
 
     strength_model = TeamStrengthModel.from_results(results, model_config=config)
     xg_prediction = strength_model.predict_fixture(enriched)
-    base_home_xg = xg_prediction["home_xg"]
-    base_away_xg = xg_prediction["away_xg"]
+    raw_base_home = xg_prediction["home_xg"]
+    raw_base_away = xg_prediction["away_xg"]
+
+    base_home_xg, base_away_xg, calibration_labels, host_boost_applied = calibrate_base_xg(
+        xg_prediction,
+        enriched,
+        results,
+        config,
+    )
 
     affinity_engine = WeatherAffinityEngine.from_results(results, model_config=config)
     context = await build_match_context(
@@ -111,6 +124,8 @@ async def predict_fixture_markets(
         weather_modifiers=weather_modifiers,
     )
 
+    all_adjustments = [*calibration_labels, *adjustment_labels]
+
     simulator = MatchSimulator(
         home_xg=adjusted_home_xg,
         away_xg=adjusted_away_xg,
@@ -118,6 +133,26 @@ async def predict_fixture_markets(
         dixon_coles_rho=config.dixon_coles_rho,
     )
     simulation = simulator.simulate()
+
+    knockout_markets: KnockoutMarkets | None = None
+    if context.is_knockout:
+        knockout_markets = compute_knockout_markets(
+            adjusted_home_xg,
+            adjusted_away_xg,
+            max_goals=max_goals,
+            dixon_coles_rho=config.dixon_coles_rho,
+        )
+
+    home_wc_matches = count_team_matches(results, enriched.home_team_id)
+    away_wc_matches = count_team_matches(results, enriched.away_team_id)
+    warnings = build_prediction_warnings(
+        adjusted_home_xg=adjusted_home_xg,
+        adjusted_away_xg=adjusted_away_xg,
+        draw_probability=simulation.markets["draw"],
+        home_wc_matches=home_wc_matches,
+        away_wc_matches=away_wc_matches,
+        fixture=enriched,
+    )
 
     breakdown = PredictionBreakdown(
         simulation=simulation,
@@ -129,17 +164,31 @@ async def predict_fixture_markets(
         weather_home_modifier=weather_modifiers[0],
         weather_away_modifier=weather_modifiers[1],
         weather_labels=weather_modifiers[2],
-        adjustments_applied=adjustment_labels,
+        adjustments_applied=all_adjustments,
+        strength_home_xg=raw_base_home,
+        strength_away_xg=raw_base_away,
+        home_attack=xg_prediction["home_attack"],
+        away_attack=xg_prediction["away_attack"],
+        home_defense=xg_prediction["home_defense"],
+        away_defense=xg_prediction["away_defense"],
+        n_training_matches=len(results),
+        home_wc_matches=home_wc_matches,
+        away_wc_matches=away_wc_matches,
+        warnings=warnings,
+        host_boost_applied=host_boost_applied,
+        knockout_markets=knockout_markets,
     )
 
     logger.info(
         "Markets for %s vs %s: H %.1f%% D %.1f%% A %.1f%% "
-        "(base xG %.2f-%.2f → adj %.2f-%.2f)",
+        "(strength xG %.2f-%.2f, calibrated %.2f-%.2f, adj %.2f-%.2f)",
         enriched.home_team_name,
         enriched.away_team_name,
         simulation.markets["home_win"] * 100,
         simulation.markets["draw"] * 100,
         simulation.markets["away_win"] * 100,
+        raw_base_home,
+        raw_base_away,
         base_home_xg,
         base_away_xg,
         adjusted_home_xg,

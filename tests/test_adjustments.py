@@ -10,13 +10,14 @@ from fifa26_engine.models.adjustments import AdjustmentEngine, MatchContext
 UTC = timezone.utc
 
 
-def test_knockout_reduces_xg() -> None:
+def test_knockout_does_not_reduce_xg_in_adjustments() -> None:
+    """Knockout semantics are handled in knockout.py, not via xG deflation."""
     engine = AdjustmentEngine()
     context = MatchContext(is_knockout=True)
     home, away, labels = engine.apply(1.5, 1.2, context)
-    assert home < 1.5
-    assert away < 1.2
-    assert "knockout_caution" in labels
+    assert home == 1.5
+    assert away == 1.2
+    assert "knockout_caution" not in labels
 
 
 def test_missing_players_penalty() -> None:

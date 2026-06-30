@@ -6,7 +6,13 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from fifa26_engine.config.model_config import DEFAULT_DIXON_COLES_RHO, DEFAULT_MODEL_VERSION
+from fifa26_engine.config.model_config import (
+    DEFAULT_DIXON_COLES_RHO,
+    DEFAULT_ELO_BLEND_WEIGHT,
+    DEFAULT_HOST_NATION_BOOST,
+    DEFAULT_MODEL_VERSION,
+    DEFAULT_TOURNAMENT_MIN_TOTAL_XG,
+)
 from fifa26_engine.config.paths import ENV_FILE
 
 # ---------------------------------------------------------------------------
@@ -166,6 +172,22 @@ class Settings(BaseSettings):
         default=0.0,
         ge=0.0,
         description="Exponential decay half-life for match weights (0 = disabled).",
+    )
+    tournament_min_total_xg: float = Field(
+        default=DEFAULT_TOURNAMENT_MIN_TOTAL_XG,
+        ge=0.0,
+        description="Minimum total base xG for neutral tournament fixtures (0 = disabled).",
+    )
+    elo_blend_weight: float = Field(
+        default=DEFAULT_ELO_BLEND_WEIGHT,
+        ge=0.0,
+        le=1.0,
+        description="Blend weight for Elo-implied xG (0 = Poisson only).",
+    )
+    host_nation_boost: float = Field(
+        default=DEFAULT_HOST_NATION_BOOST,
+        ge=0.0,
+        description="Log-rate boost for 2026 host nations (mexico, usa, canada).",
     )
     model_version: str = Field(
         default=DEFAULT_MODEL_VERSION,

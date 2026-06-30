@@ -151,10 +151,34 @@ WC2026_GROUNDS: dict[str, str] = {
 
 
 def ground_to_stadium(ground: str | None) -> str | None:
-    """Map an openfootball ground label to a stadium name."""
+    """Map an openfootball ground label to a stadium name (exact or fuzzy)."""
     if not ground:
         return None
-    return WC2026_GROUNDS.get(ground.strip().lower())
+    normalized = ground.strip().lower()
+    exact = WC2026_GROUNDS.get(normalized)
+    if exact:
+        return exact
+
+    fuzzy_tokens = (
+        ("monterrey", "Estadio Banorte"),
+        ("guadalupe", "Estadio BBVA"),
+        ("banorte", "Estadio Banorte"),
+        ("bbva", "Estadio BBVA"),
+        ("inglewood", "SoFi Stadium"),
+        ("east rutherford", "MetLife Stadium"),
+        ("foxborough", "Gillette Stadium"),
+        ("santa clara", "Levi's Stadium"),
+        ("arlington", "AT&T Stadium"),
+        ("miami gardens", "Hard Rock Stadium"),
+    )
+    for token, stadium in fuzzy_tokens:
+        if token in normalized:
+            return stadium
+
+    for key, stadium in WC2026_GROUNDS.items():
+        if key in normalized or normalized in key:
+            return stadium
+    return None
 
 
 @dataclass(frozen=True)

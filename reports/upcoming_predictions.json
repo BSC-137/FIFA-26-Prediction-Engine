@@ -1,167 +1,1653 @@
 {
-  "generated_at": "2026-06-30T16:00:31.032860+00:00",
-  "model_version": "0.2.0",
-  "api_dates_queried": [
-    "2026-06-29",
-    "2026-06-30",
-    "2026-07-01"
-  ],
-  "n_fixtures": 5,
+  "generated_at": "2026-06-30T16:15:09.708550+00:00",
+  "source": "openfootball",
+  "model_version": "1.0.0-rc1",
+  "count": 28,
   "predictions": [
     {
-      "fixture_id": "1564789",
+      "fixture_id": "wc26-078",
       "match": "Ivory Coast vs Norway",
       "kickoff_utc": "2026-06-30T17:00:00+00:00",
-      "venue": "AT&T Stadium",
       "stage": "Round of 32",
+      "venue": "AT&T Stadium",
+      "venue_city": "Arlington",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.4282,
       "probabilities": {
-        "home_win": 0.1241,
-        "draw": 0.2293,
-        "away_win": 0.6466,
-        "btts_yes": 0.4795,
-        "over_2_5": 0.5241
+        "home_win": 0.4282,
+        "draw": 0.3252,
+        "away_win": 0.2467,
+        "btts_yes": 0.4342,
+        "btts_no": 0.5658,
+        "over_2_5": 0.3571,
+        "under_2_5": 0.6429
       },
+      "prob_sum": 1.0,
       "expected_goals": {
-        "base_home": 0.801,
-        "base_away": 2.057,
-        "adjusted_home": 0.777,
-        "adjusted_away": 1.996
+        "strength_home": 1.069,
+        "strength_away": 0.597,
+        "base_home": 1.241,
+        "base_away": 0.884,
+        "adjusted_home": 1.241,
+        "adjusted_away": 0.884
       },
       "weather": {
         "temperature_c": 32.5,
+        "humidity_pct": 52.0,
+        "wind_speed_kmh": 20.2,
         "precipitation_mm": 0.0,
-        "weather_code": "heat"
+        "weather_code": "heat",
+        "is_indoor": false
       },
       "adjustments": [
-        "knockout_caution"
+        "elo_blend:0.25"
       ],
-      "weather_labels": [],
-      "prob_sum": 1.0,
-      "status": "ok"
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.1374,
+        "away_attack": 0.2811,
+        "home_defense": 0.5486,
+        "away_defense": -0.177,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.4282,
+        "regulation_draw": 0.3252,
+        "regulation_away_win": 0.2467,
+        "advance_home": 0.6089,
+        "advance_away": 0.3911
+      }
     },
     {
-      "fixture_id": "1565177",
+      "fixture_id": "wc26-077",
       "match": "France vs Sweden",
       "kickoff_utc": "2026-06-30T21:00:00+00:00",
-      "venue": "MetLife Stadium",
       "stage": "Round of 32",
+      "venue": "MetLife Stadium",
+      "venue_city": "East Rutherford",
+      "pitch_type": "hybrid",
+      "model_pick": "home",
+      "model_pick_prob": 0.7385,
       "probabilities": {
-        "home_win": 0.2525,
-        "draw": 0.6184,
-        "away_win": 0.1291,
-        "btts_yes": 0.0629,
-        "over_2_5": 0.0206
+        "home_win": 0.7385,
+        "draw": 0.1703,
+        "away_win": 0.0913,
+        "btts_yes": 0.5418,
+        "btts_no": 0.4582,
+        "over_2_5": 0.6711,
+        "under_2_5": 0.3289
       },
+      "prob_sum": 1.0,
       "expected_goals": {
-        "base_home": 0.377,
-        "base_away": 0.214,
-        "adjusted_home": 0.366,
-        "adjusted_away": 0.207
+        "strength_home": 2.65,
+        "strength_away": 0.516,
+        "base_home": 2.601,
+        "base_away": 0.857,
+        "adjusted_home": 2.601,
+        "adjusted_away": 0.857
       },
       "weather": {
         "temperature_c": 34.0,
+        "humidity_pct": 36.0,
+        "wind_speed_kmh": 16.8,
         "precipitation_mm": 0.0,
-        "weather_code": "heat"
+        "weather_code": "heat",
+        "is_indoor": false
       },
       "adjustments": [
-        "knockout_caution"
+        "elo_blend:0.25"
       ],
-      "weather_labels": [],
-      "prob_sum": 1.0,
-      "status": "ok"
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.321,
+        "away_attack": 0.2151,
+        "home_defense": 0.8716,
+        "away_defense": -0.6582,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.7385,
+        "regulation_draw": 0.1703,
+        "regulation_away_win": 0.0913,
+        "advance_home": 0.8598,
+        "advance_away": 0.1402
+      }
     },
     {
-      "fixture_id": "1567306",
+      "fixture_id": "wc26-079",
       "match": "Mexico vs Ecuador",
       "kickoff_utc": "2026-07-01T01:00:00+00:00",
-      "venue": "Estadio Banorte",
       "stage": "Round of 32",
+      "venue": "Estadio Azteca",
+      "venue_city": "Mexico City",
+      "pitch_type": "grass",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3827,
       "probabilities": {
-        "home_win": 0.1181,
-        "draw": 0.7572,
-        "away_win": 0.1247,
-        "btts_yes": 0.0226,
-        "over_2_5": 0.0039
+        "home_win": 0.3734,
+        "draw": 0.3827,
+        "away_win": 0.2439,
+        "btts_yes": 0.3139,
+        "btts_no": 0.6861,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
       },
+      "prob_sum": 1.0,
       "expected_goals": {
-        "base_home": 0.15,
-        "base_away": 0.163,
-        "adjusted_home": 0.15,
-        "adjusted_away": 0.158
+        "strength_home": 0.15,
+        "strength_away": 0.15,
+        "base_home": 0.913,
+        "base_away": 0.687,
+        "adjusted_home": 0.913,
+        "adjusted_away": 0.687
       },
       "weather": {
-        "temperature_c": null,
-        "precipitation_mm": null,
-        "weather_code": null
+        "temperature_c": 16.6,
+        "humidity_pct": 79.0,
+        "wind_speed_kmh": 0.6,
+        "precipitation_mm": 0.3,
+        "weather_code": "clear",
+        "is_indoor": false
       },
       "adjustments": [
-        "knockout_caution"
+        "elo_blend:0.25",
+        "host_nation_boost:0.12",
+        "tournament_scoring_floor_applied"
       ],
-      "weather_labels": [],
-      "prob_sum": 1.0,
-      "status": "ok"
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.2666,
+        "away_attack": 0.0634,
+        "home_defense": 0.8721,
+        "away_defense": 0.1754,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.12
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3734,
+        "regulation_draw": 0.3827,
+        "regulation_away_win": 0.2439,
+        "advance_home": 0.5802,
+        "advance_away": 0.4198
+      }
     },
     {
-      "fixture_id": "1567307",
-      "match": "England vs Congo DR",
+      "fixture_id": "wc26-080",
+      "match": "England vs DR Congo",
       "kickoff_utc": "2026-07-01T16:00:00+00:00",
-      "venue": "Mercedes-Benz Stadium",
       "stage": "Round of 32",
+      "venue": "Mercedes-Benz Stadium",
+      "venue_city": "Atlanta",
+      "pitch_type": "artificial",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3854,
       "probabilities": {
-        "home_win": 0.5208,
-        "draw": 0.3891,
-        "away_win": 0.0901,
-        "btts_yes": 0.1554,
-        "over_2_5": 0.1293
+        "home_win": 0.3468,
+        "draw": 0.3854,
+        "away_win": 0.2679,
+        "btts_yes": 0.3178,
+        "btts_no": 0.6822,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
       },
+      "prob_sum": 1.0,
       "expected_goals": {
-        "base_home": 1.003,
-        "base_away": 0.275,
-        "adjusted_home": 0.973,
-        "adjusted_away": 0.267
+        "strength_home": 0.374,
+        "strength_away": 0.314,
+        "base_home": 0.869,
+        "base_away": 0.731,
+        "adjusted_home": 0.869,
+        "adjusted_away": 0.731
       },
       "weather": {
         "temperature_c": 34.6,
+        "humidity_pct": 46.0,
+        "wind_speed_kmh": 6.4,
         "precipitation_mm": 0.0,
-        "weather_code": "heat"
+        "weather_code": "heat",
+        "is_indoor": false
       },
       "adjustments": [
-        "knockout_caution"
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
       ],
-      "weather_labels": [],
-      "prob_sum": 1.0,
-      "status": "ok"
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": -0.3549,
+        "away_attack": -0.4553,
+        "home_defense": 0.599,
+        "away_defense": 0.5248,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3468,
+        "regulation_draw": 0.3854,
+        "regulation_away_win": 0.2679,
+        "advance_home": 0.549,
+        "advance_away": 0.451
+      }
     },
     {
-      "fixture_id": "1567308",
+      "fixture_id": "wc26-082",
       "match": "Belgium vs Senegal",
       "kickoff_utc": "2026-07-01T20:00:00+00:00",
-      "venue": "Lumen Field",
       "stage": "Round of 32",
+      "venue": "Lumen Field",
+      "venue_city": "Seattle",
+      "pitch_type": "artificial",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3612,
       "probabilities": {
-        "home_win": 0.0687,
-        "draw": 0.3848,
-        "away_win": 0.5465,
-        "btts_yes": 0.1248,
-        "over_2_5": 0.1186
+        "home_win": 0.3339,
+        "draw": 0.3612,
+        "away_win": 0.3049,
+        "btts_yes": 0.3744,
+        "btts_no": 0.6256,
+        "over_2_5": 0.2751,
+        "under_2_5": 0.7249
       },
+      "prob_sum": 1.0,
       "expected_goals": {
-        "base_home": 0.213,
-        "base_away": 1.015,
-        "adjusted_home": 0.206,
-        "adjusted_away": 0.985
+        "strength_home": 0.586,
+        "strength_away": 0.62,
+        "base_home": 0.937,
+        "base_away": 0.884,
+        "adjusted_home": 0.937,
+        "adjusted_away": 0.884
       },
       "weather": {
         "temperature_c": 17.6,
+        "humidity_pct": 62.0,
+        "wind_speed_kmh": 12.6,
         "precipitation_mm": 0.0,
-        "weather_code": "clear"
+        "weather_code": "clear",
+        "is_indoor": false
       },
       "adjustments": [
-        "knockout_caution"
+        "elo_blend:0.25"
       ],
-      "weather_labels": [],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": -0.6237,
+        "away_attack": -0.4964,
+        "home_defense": 0.8721,
+        "away_defense": 0.8005,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3339,
+        "regulation_draw": 0.3612,
+        "regulation_away_win": 0.3049,
+        "advance_home": 0.5177,
+        "advance_away": 0.4823
+      }
+    },
+    {
+      "fixture_id": "wc26-081",
+      "match": "USA vs Bosnia & Herzegovina",
+      "kickoff_utc": "2026-07-02T00:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Levi's Stadium",
+      "venue_city": "Santa Clara",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.6322,
+      "probabilities": {
+        "home_win": 0.6322,
+        "draw": 0.2162,
+        "away_win": 0.1516,
+        "btts_yes": 0.5826,
+        "btts_no": 0.4174,
+        "over_2_5": 0.6285,
+        "under_2_5": 0.3715
+      },
       "prob_sum": 1.0,
-      "status": "ok"
+      "expected_goals": {
+        "strength_home": 1.958,
+        "strength_away": 0.751,
+        "base_home": 2.216,
+        "base_away": 1.024,
+        "adjusted_home": 2.216,
+        "adjusted_away": 1.024
+      },
+      "weather": {
+        "temperature_c": 24.9,
+        "humidity_pct": 43.0,
+        "wind_speed_kmh": 16.4,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "host_nation_boost:0.12"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.0676,
+        "away_attack": -0.0784,
+        "home_defense": 0.6428,
+        "away_defense": -0.1697,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.12
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.6322,
+        "regulation_draw": 0.2162,
+        "regulation_away_win": 0.1516,
+        "advance_home": 0.7732,
+        "advance_away": 0.2268
+      }
+    },
+    {
+      "fixture_id": "wc26-084",
+      "match": "Spain vs Austria",
+      "kickoff_utc": "2026-07-02T19:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "SoFi Stadium",
+      "venue_city": "Inglewood",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.3848,
+      "probabilities": {
+        "home_win": 0.3848,
+        "draw": 0.3812,
+        "away_win": 0.234,
+        "btts_yes": 0.3117,
+        "btts_no": 0.6883,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.293,
+        "strength_away": 0.15,
+        "base_home": 0.932,
+        "base_away": 0.668,
+        "adjusted_home": 0.932,
+        "adjusted_away": 0.668
+      },
+      "weather": {
+        "temperature_c": 21.9,
+        "humidity_pct": 53.0,
+        "wind_speed_kmh": 15.0,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.0824,
+        "away_attack": 0.0823,
+        "home_defense": 0.8725,
+        "away_defense": 0.0517,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3848,
+        "regulation_draw": 0.3812,
+        "regulation_away_win": 0.234,
+        "advance_home": 0.5934,
+        "advance_away": 0.4066
+      }
+    },
+    {
+      "fixture_id": "wc26-083",
+      "match": "Portugal vs Croatia",
+      "kickoff_utc": "2026-07-02T23:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "BMO Field",
+      "venue_city": "Toronto",
+      "pitch_type": "grass",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3868,
+      "probabilities": {
+        "home_win": 0.3144,
+        "draw": 0.3868,
+        "away_win": 0.2987,
+        "btts_yes": 0.3199,
+        "btts_no": 0.6801,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.363,
+        "strength_away": 0.331,
+        "base_home": 0.814,
+        "base_away": 0.786,
+        "adjusted_home": 0.814,
+        "adjusted_away": 0.786
+      },
+      "weather": {
+        "temperature_c": 33.5,
+        "humidity_pct": 55.0,
+        "wind_speed_kmh": 15.6,
+        "precipitation_mm": 0.1,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.0437,
+        "away_attack": 0.4375,
+        "home_defense": 0.52,
+        "away_defense": 0.0341,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3144,
+        "regulation_draw": 0.3868,
+        "regulation_away_win": 0.2987,
+        "advance_home": 0.5097,
+        "advance_away": 0.4903
+      }
+    },
+    {
+      "fixture_id": "wc26-085",
+      "match": "Switzerland vs Algeria",
+      "kickoff_utc": "2026-07-03T03:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "BC Place",
+      "venue_city": "Vancouver",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.6184,
+      "probabilities": {
+        "home_win": 0.6184,
+        "draw": 0.2312,
+        "away_win": 0.1504,
+        "btts_yes": 0.5385,
+        "btts_no": 0.4615,
+        "over_2_5": 0.5693,
+        "under_2_5": 0.4307
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 2.054,
+        "strength_away": 0.68,
+        "base_home": 2.039,
+        "base_away": 0.928,
+        "adjusted_home": 2.039,
+        "adjusted_away": 0.928
+      },
+      "weather": {
+        "temperature_c": 13.9,
+        "humidity_pct": 91.0,
+        "wind_speed_kmh": 4.7,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.2647,
+        "away_attack": -0.6495,
+        "home_defense": 0.1905,
+        "away_defense": -0.0011,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.6184,
+        "regulation_draw": 0.2312,
+        "regulation_away_win": 0.1504,
+        "advance_home": 0.7681,
+        "advance_away": 0.2319
+      }
+    },
+    {
+      "fixture_id": "wc26-088",
+      "match": "Australia vs Egypt",
+      "kickoff_utc": "2026-07-03T18:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "AT&T Stadium",
+      "venue_city": "Arlington",
+      "pitch_type": "artificial",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3865,
+      "probabilities": {
+        "home_win": 0.2853,
+        "draw": 0.3865,
+        "away_win": 0.3282,
+        "btts_yes": 0.3194,
+        "btts_no": 0.6806,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.279,
+        "strength_away": 0.307,
+        "base_home": 0.763,
+        "base_away": 0.837,
+        "adjusted_home": 0.763,
+        "adjusted_away": 0.837
+      },
+      "weather": {
+        "temperature_c": 35.4,
+        "humidity_pct": 37.0,
+        "wind_speed_kmh": 13.3,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": -0.1508,
+        "away_attack": 0.3585,
+        "home_defense": 0.1508,
+        "away_defense": -0.2627,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.2853,
+        "regulation_draw": 0.3865,
+        "regulation_away_win": 0.3282,
+        "advance_home": 0.4734,
+        "advance_away": 0.5266
+      }
+    },
+    {
+      "fixture_id": "wc26-086",
+      "match": "Argentina vs Cape Verde",
+      "kickoff_utc": "2026-07-03T22:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Hard Rock Stadium",
+      "venue_city": "Miami Gardens",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.4029,
+      "probabilities": {
+        "home_win": 0.4029,
+        "draw": 0.3784,
+        "away_win": 0.2187,
+        "btts_yes": 0.3076,
+        "btts_no": 0.6924,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.29,
+        "strength_away": 0.15,
+        "base_home": 0.962,
+        "base_away": 0.638,
+        "adjusted_home": 0.962,
+        "adjusted_away": 0.638
+      },
+      "weather": {
+        "temperature_c": 33.1,
+        "humidity_pct": 50.0,
+        "wind_speed_kmh": 19.9,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.7039,
+        "away_attack": 0.0675,
+        "home_defense": 0.1818,
+        "away_defense": -0.0618,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.4029,
+        "regulation_draw": 0.3784,
+        "regulation_away_win": 0.2187,
+        "advance_home": 0.614,
+        "advance_away": 0.386
+      }
+    },
+    {
+      "fixture_id": "wc26-087",
+      "match": "Colombia vs Ghana",
+      "kickoff_utc": "2026-07-04T01:30:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Arrowhead Stadium",
+      "venue_city": "Kansas City",
+      "pitch_type": "grass",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3847,
+      "probabilities": {
+        "home_win": 0.3552,
+        "draw": 0.3847,
+        "away_win": 0.2601,
+        "btts_yes": 0.3167,
+        "btts_no": 0.6833,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.198,
+        "strength_away": 0.154,
+        "base_home": 0.883,
+        "base_away": 0.717,
+        "adjusted_home": 0.883,
+        "adjusted_away": 0.717
+      },
+      "weather": {
+        "temperature_c": 28.5,
+        "humidity_pct": 79.0,
+        "wind_speed_kmh": 16.2,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.3239,
+        "away_attack": 0.324,
+        "home_defense": 0.1903,
+        "away_defense": -0.0595,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3552,
+        "regulation_draw": 0.3847,
+        "regulation_away_win": 0.2601,
+        "advance_home": 0.559,
+        "advance_away": 0.441
+      }
+    },
+    {
+      "fixture_id": "wc26-090",
+      "match": "Canada vs W75",
+      "kickoff_utc": "2026-07-04T17:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "NRG Stadium",
+      "venue_city": "Houston",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.4616,
+      "probabilities": {
+        "home_win": 0.4616,
+        "draw": 0.3535,
+        "away_win": 0.1849,
+        "btts_yes": 0.3218,
+        "btts_no": 0.6782,
+        "over_2_5": 0.2484,
+        "under_2_5": 0.7516
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.794,
+        "strength_away": 0.334,
+        "base_home": 1.113,
+        "base_away": 0.609,
+        "adjusted_home": 1.113,
+        "adjusted_away": 0.609
+      },
+      "weather": {
+        "temperature_c": 34.3,
+        "humidity_pct": 42.0,
+        "wind_speed_kmh": 9.0,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "host_nation_boost:0.12"
+      ],
+      "warnings": [
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.2832,
+        "away_attack": -0.0189,
+        "home_defense": 0.5295,
+        "away_defense": -0.0353,
+        "n_training_matches": 4,
+        "home_wc_matches": 4,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.12
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.4616,
+        "regulation_draw": 0.3535,
+        "regulation_away_win": 0.1849,
+        "advance_home": 0.669,
+        "advance_away": 0.331
+      }
+    },
+    {
+      "fixture_id": "wc26-089",
+      "match": "W74 vs W77",
+      "kickoff_utc": "2026-07-04T21:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "Lincoln Financial Field",
+      "venue_city": "Philadelphia",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 40.7,
+        "humidity_pct": 23.0,
+        "wind_speed_kmh": 17.1,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-091",
+      "match": "W76 vs W78",
+      "kickoff_utc": "2026-07-05T20:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "MetLife Stadium",
+      "venue_city": "East Rutherford",
+      "pitch_type": "hybrid",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 31.7,
+        "humidity_pct": 52.0,
+        "wind_speed_kmh": 9.3,
+        "precipitation_mm": 0.1,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-092",
+      "match": "W79 vs W80",
+      "kickoff_utc": "2026-07-06T00:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "Estadio Azteca",
+      "venue_city": "Mexico City",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 18.1,
+        "humidity_pct": 83.0,
+        "wind_speed_kmh": 3.3,
+        "precipitation_mm": 1.2,
+        "weather_code": "rain",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-093",
+      "match": "W83 vs W84",
+      "kickoff_utc": "2026-07-06T19:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "AT&T Stadium",
+      "venue_city": "Arlington",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 35.1,
+        "humidity_pct": 35.0,
+        "wind_speed_kmh": 10.9,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-094",
+      "match": "W81 vs W82",
+      "kickoff_utc": "2026-07-07T00:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "Lumen Field",
+      "venue_city": "Seattle",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 24.7,
+        "humidity_pct": 33.0,
+        "wind_speed_kmh": 15.4,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-095",
+      "match": "W86 vs W88",
+      "kickoff_utc": "2026-07-07T16:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "Mercedes-Benz Stadium",
+      "venue_city": "Atlanta",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 31.3,
+        "humidity_pct": 50.0,
+        "wind_speed_kmh": 16.2,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-096",
+      "match": "W85 vs W87",
+      "kickoff_utc": "2026-07-07T20:00:00+00:00",
+      "stage": "Round of 16",
+      "venue": "BC Place",
+      "venue_city": "Vancouver",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 21.3,
+        "humidity_pct": 48.0,
+        "wind_speed_kmh": 10.1,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-097",
+      "match": "W89 vs W90",
+      "kickoff_utc": "2026-07-09T20:00:00+00:00",
+      "stage": "Quarter-final",
+      "venue": "Gillette Stadium",
+      "venue_city": "Foxborough",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 32.3,
+        "humidity_pct": 29.0,
+        "wind_speed_kmh": 13.9,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-098",
+      "match": "W93 vs W94",
+      "kickoff_utc": "2026-07-10T19:00:00+00:00",
+      "stage": "Quarter-final",
+      "venue": "SoFi Stadium",
+      "venue_city": "Inglewood",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 25.6,
+        "humidity_pct": 49.0,
+        "wind_speed_kmh": 12.4,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-099",
+      "match": "W91 vs W92",
+      "kickoff_utc": "2026-07-11T21:00:00+00:00",
+      "stage": "Quarter-final",
+      "venue": "Hard Rock Stadium",
+      "venue_city": "Miami Gardens",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 34.7,
+        "humidity_pct": 44.0,
+        "wind_speed_kmh": 21.4,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-100",
+      "match": "W95 vs W96",
+      "kickoff_utc": "2026-07-12T01:00:00+00:00",
+      "stage": "Quarter-final",
+      "venue": "Arrowhead Stadium",
+      "venue_city": "Kansas City",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 23.4,
+        "humidity_pct": 76.0,
+        "wind_speed_kmh": 18.4,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-101",
+      "match": "W97 vs W98",
+      "kickoff_utc": "2026-07-14T19:00:00+00:00",
+      "stage": "Semi-final",
+      "venue": "AT&T Stadium",
+      "venue_city": "Arlington",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 38.4,
+        "humidity_pct": 26.0,
+        "wind_speed_kmh": 10.7,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-102",
+      "match": "W99 vs W100",
+      "kickoff_utc": "2026-07-15T19:00:00+00:00",
+      "stage": "Semi-final",
+      "venue": "Mercedes-Benz Stadium",
+      "venue_city": "Atlanta",
+      "pitch_type": "artificial",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": 35.8,
+        "humidity_pct": 29.0,
+        "wind_speed_kmh": 13.8,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
+    },
+    {
+      "fixture_id": "wc26-103",
+      "match": "L101 vs L102",
+      "kickoff_utc": "2026-07-18T21:00:00+00:00",
+      "stage": "Match for third place",
+      "venue": "Hard Rock Stadium",
+      "venue_city": "Miami Gardens",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": null,
+        "humidity_pct": null,
+        "wind_speed_kmh": null,
+        "precipitation_mm": null,
+        "weather_code": null,
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": null
+    },
+    {
+      "fixture_id": "wc26-104",
+      "match": "W101 vs W102",
+      "kickoff_utc": "2026-07-19T19:00:00+00:00",
+      "stage": "Final",
+      "venue": "MetLife Stadium",
+      "venue_city": "East Rutherford",
+      "pitch_type": "hybrid",
+      "model_pick": "home",
+      "model_pick_prob": 0.355,
+      "probabilities": {
+        "home_win": 0.355,
+        "draw": 0.29,
+        "away_win": 0.355,
+        "btts_yes": 0.5646,
+        "btts_no": 0.4354,
+        "over_2_5": 0.5064,
+        "under_2_5": 0.4936
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.35,
+        "strength_away": 1.35,
+        "base_home": 1.35,
+        "base_away": 1.35,
+        "adjusted_home": 1.35,
+        "adjusted_away": 1.35
+      },
+      "weather": {
+        "temperature_c": null,
+        "humidity_pct": null,
+        "wind_speed_kmh": null,
+        "precipitation_mm": null,
+        "weather_code": null,
+        "is_indoor": false
+      },
+      "adjustments": [],
+      "warnings": [
+        "home_sparse_wc_history",
+        "away_sparse_wc_history"
+      ],
+      "diagnostics": {
+        "home_attack": 0.0,
+        "away_attack": 0.0,
+        "home_defense": 0.0,
+        "away_defense": 0.0,
+        "n_training_matches": 0,
+        "home_wc_matches": 0,
+        "away_wc_matches": 0,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.355,
+        "regulation_draw": 0.29,
+        "regulation_away_win": 0.355,
+        "advance_home": 0.5,
+        "advance_away": 0.5
+      }
     }
   ]
 }

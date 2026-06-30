@@ -83,10 +83,36 @@ class WeatherResponse(BaseModel):
 class ExpectedGoalsResponse(BaseModel):
     """Base and adjusted expected goals."""
 
+    strength_home: float = Field(ge=0.0, default=0.0)
+    strength_away: float = Field(ge=0.0, default=0.0)
     base_home: float = Field(ge=0.0)
     base_away: float = Field(ge=0.0)
     adjusted_home: float = Field(ge=0.0)
     adjusted_away: float = Field(ge=0.0)
+
+
+class KnockoutMarketsResponse(BaseModel):
+    """Knockout regulation and to-advance probabilities."""
+
+    regulation_home_win: float = Field(ge=0.0, le=1.0)
+    regulation_draw: float = Field(ge=0.0, le=1.0)
+    regulation_away_win: float = Field(ge=0.0, le=1.0)
+    advance_home: float = Field(ge=0.0, le=1.0)
+    advance_away: float = Field(ge=0.0, le=1.0)
+
+
+class ModelDiagnosticsResponse(BaseModel):
+    """Transparency fields for model inputs and confidence warnings."""
+
+    home_attack: float
+    away_attack: float
+    home_defense: float
+    away_defense: float
+    n_training_matches: int
+    home_wc_matches: int
+    away_wc_matches: int
+    host_boost_applied: float = 0.0
+    warnings: list[str] = Field(default_factory=list)
 
 
 class TopScoreResponse(BaseModel):
@@ -118,6 +144,9 @@ class PredictionResponse(BaseModel):
     pitch_type: PitchTypeSchema = "unknown"
     adjustments_applied: list[str] = Field(default_factory=list)
     weather_explanations: list[str] = Field(default_factory=list)
+    diagnostics: Optional[ModelDiagnosticsResponse] = None
+    knockout_markets: Optional[KnockoutMarketsResponse] = None
+    prob_sum: float = Field(ge=0.0, le=1.01, default=1.0)
     model_version: str = MODEL_VERSION
     generated_at: datetime
     as_of_utc: datetime
@@ -213,6 +242,9 @@ class ModelInfoResponse(BaseModel):
     weather_min_bucket_samples: int
     intercept_prior_goals: float
     time_decay_half_life_days: float
+    tournament_min_total_xg: float
+    elo_blend_weight: float
+    host_nation_boost: float
 
 
 class TeamTournamentStatsResponse(BaseModel):

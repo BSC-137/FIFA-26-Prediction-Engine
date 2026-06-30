@@ -76,6 +76,18 @@ class PredictionBreakdown:
     weather_away_modifier: float
     weather_labels: list[str]
     adjustments_applied: list[str]
+    strength_home_xg: float = 0.0
+    strength_away_xg: float = 0.0
+    home_attack: float = 0.0
+    away_attack: float = 0.0
+    home_defense: float = 0.0
+    away_defense: float = 0.0
+    n_training_matches: int = 0
+    home_wc_matches: int = 0
+    away_wc_matches: int = 0
+    warnings: list[str] | None = None
+    host_boost_applied: float = 0.0
+    knockout_markets: object | None = None
 
 
 class MatchSimulator:

@@ -102,11 +102,7 @@ class AdjustmentEngine:
                 away_factor *= _clamp_factor(1.0 + LONG_REST_BONUS)
                 labels.append(f"away_long_rest:{context.away_days_rest}d")
 
-        if context.is_knockout:
-            knockout_factor = _clamp_factor(KNOCKOUT_DEFENSIVE_FACTOR)
-            home_factor *= knockout_factor
-            away_factor *= knockout_factor
-            labels.append("knockout_caution")
+        # Knockout defensive adjustment removed — knockout markets handled in knockout.py.
 
         home_factor = _clamp_factor(home_factor)
         away_factor = _clamp_factor(away_factor)

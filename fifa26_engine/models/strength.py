@@ -62,6 +62,7 @@ class FixturePrediction(TypedDict):
     away_defense: float
     home_advantage_applied: float
     is_neutral: bool
+    host_boost_applied: float
 
 
 def clamp_xg(value: float) -> float:
@@ -111,6 +112,7 @@ class TeamStrengthModel:
         self._team_params: dict[str, TeamParams] = {}
         self._fallback_attack: float = 0.0
         self._fallback_defense: float = 0.0
+        self._is_world_cup_pool = False
         self._is_fitted = False
 
     @classmethod
@@ -202,6 +204,7 @@ class TeamStrengthModel:
         )
 
         self._unpack_parameters(result.x, n_teams)
+        self._is_world_cup_pool = _is_world_cup_training_pool(results)
         self._apply_shrinkage(matches_played)
         self._compute_fallback_params()
         self._is_fitted = True
@@ -258,6 +261,7 @@ class TeamStrengthModel:
             away_defense=away["defense"],
             home_advantage_applied=home_adv_applied,
             is_neutral=is_neutral,
+            host_boost_applied=0.0,
         )
 
     def _reset_to_prior(self) -> None:
@@ -288,7 +292,7 @@ class TeamStrengthModel:
         return np.exp(-ages_days / self._time_decay_half_life)
 
     def _compute_fallback_params(self) -> None:
-        """Competition-average ratings for teams absent from the training pool."""
+        """Tournament-average ratings for teams absent from the training pool."""
         known = [
             params
             for params in self._team_params.values()
@@ -298,8 +302,18 @@ class TeamStrengthModel:
             self._fallback_attack = 0.0
             self._fallback_defense = 0.0
             return
-        self._fallback_attack = float(np.mean([params["attack"] for params in known]))
-        self._fallback_defense = float(np.mean([params["defense"] for params in known]))
+
+        if self._is_world_cup_pool:
+            # Group-stage pool: teams with 1–3 tournament matches (typical group phase).
+            group_pool = [
+                params for params in known if 1 <= params["matches_played"] <= 3
+            ]
+            pool = group_pool if group_pool else known
+        else:
+            pool = known
+
+        self._fallback_attack = float(np.mean([params["attack"] for params in pool]))
+        self._fallback_defense = float(np.mean([params["defense"] for params in pool]))
 
     @staticmethod
     def _collect_teams(results: list[MatchResult]) -> tuple[list[str], dict[str, int]]:
@@ -384,9 +398,18 @@ class TeamStrengthModel:
         self._team_params = {}
         for index, team_id in enumerate(self._teams):
             n = matches_played[team_id]
-            weight = n / (n + self._shrinkage_prior) if self._shrinkage_prior > 0 else 1.0
+            prior = self._shrinkage_prior
+            if self._is_world_cup_pool and n >= 3:
+                prior = self._shrinkage_prior * 0.7
+            weight = n / (n + prior) if prior > 0 else 1.0
             self._team_params[team_id] = TeamParams(
                 attack=float(self._raw_attack[index] * weight),
                 defense=float(self._raw_defense[index] * weight),
                 matches_played=n,
             )
+
+
+def _is_world_cup_training_pool(results: list[MatchResult]) -> bool:
+    if not results:
+        return False
+    return all("world cup" in match.competition.lower() for match in results)

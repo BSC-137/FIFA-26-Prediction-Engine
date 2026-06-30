@@ -379,7 +379,7 @@ async def run_live_validation(
     else:
         fixture_provider = provider or create_fixture_provider(resolved)
         wp = weather_provider or create_weather_provider(resolved)
-        provider_mode = "mock" if resolved.effective_use_mock_data else "api"
+        provider_mode = resolved.effective_data_provider if not resolved.effective_use_mock_data else "mock"
 
     report = ValidationReport(force_mock=force_mock, provider_mode=provider_mode)
     report.checks.append(check_settings(resolved, force_mock=force_mock))

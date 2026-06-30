@@ -110,6 +110,9 @@ async def model_info(
         weather_min_bucket_samples=config.weather_min_bucket_samples,
         intercept_prior_goals=config.intercept_prior_goals,
         time_decay_half_life_days=config.time_decay_half_life_days,
+        tournament_min_total_xg=config.tournament_min_total_xg,
+        elo_blend_weight=config.elo_blend_weight,
+        host_nation_boost=config.host_nation_boost,
     )
 
 

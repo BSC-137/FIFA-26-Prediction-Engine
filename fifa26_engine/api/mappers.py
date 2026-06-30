@@ -7,7 +7,9 @@ from datetime import datetime, timezone
 from fifa26_engine.api.schemas import (
     ExpectedGoalsResponse,
     FixtureResponse,
+    KnockoutMarketsResponse,
     MarketProbabilitiesResponse,
+    ModelDiagnosticsResponse,
     MODEL_VERSION,
     PredictionResponse,
     TopScoreResponse,
@@ -15,6 +17,7 @@ from fifa26_engine.api.schemas import (
 )
 from fifa26_engine.data.provider import Fixture, PitchType, WeatherConditions
 from fifa26_engine.data.stadiums import resolve_stadium
+from fifa26_engine.models.knockout import KnockoutMarkets
 from fifa26_engine.models.simulator import PredictionBreakdown
 
 
@@ -88,19 +91,49 @@ def breakdown_to_prediction_response(
     model_version: str = MODEL_VERSION,
 ) -> PredictionResponse:
     """Build a full ``PredictionResponse`` from a prediction breakdown."""
+    markets = breakdown.simulation.markets
+    prob_sum = markets["home_win"] + markets["draw"] + markets["away_win"]
+
+    knockout: KnockoutMarketsResponse | None = None
+    if breakdown.knockout_markets is not None:
+        km = breakdown.knockout_markets
+        if isinstance(km, KnockoutMarkets):
+            knockout = KnockoutMarketsResponse(
+                regulation_home_win=km.regulation_home_win,
+                regulation_draw=km.regulation_draw,
+                regulation_away_win=km.regulation_away_win,
+                advance_home=km.advance_home,
+                advance_away=km.advance_away,
+            )
+
     return PredictionResponse(
         fixture=fixture_to_response(fixture),
         expected_goals=ExpectedGoalsResponse(
+            strength_home=breakdown.strength_home_xg,
+            strength_away=breakdown.strength_away_xg,
             base_home=breakdown.base_home_xg,
             base_away=breakdown.base_away_xg,
             adjusted_home=breakdown.adjusted_home_xg,
             adjusted_away=breakdown.adjusted_away_xg,
         ),
-        probabilities=markets_to_response(breakdown.simulation.markets),
+        probabilities=markets_to_response(markets),
         weather=weather_to_response(breakdown.weather_conditions),
         pitch_type=pitch_type,
         adjustments_applied=breakdown.adjustments_applied,
         weather_explanations=breakdown.weather_labels,
+        diagnostics=ModelDiagnosticsResponse(
+            home_attack=breakdown.home_attack,
+            away_attack=breakdown.away_attack,
+            home_defense=breakdown.home_defense,
+            away_defense=breakdown.away_defense,
+            n_training_matches=breakdown.n_training_matches,
+            home_wc_matches=breakdown.home_wc_matches,
+            away_wc_matches=breakdown.away_wc_matches,
+            host_boost_applied=breakdown.host_boost_applied,
+            warnings=breakdown.warnings or [],
+        ),
+        knockout_markets=knockout,
+        prob_sum=prob_sum,
         model_version=model_version,
         generated_at=datetime.now(timezone.utc),
         as_of_utc=as_of_utc,

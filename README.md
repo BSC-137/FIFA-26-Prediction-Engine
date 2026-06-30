@@ -109,6 +109,15 @@ Set `WEATHER_PROVIDER=openmeteo` in `.env` for live forecasts (no API key requir
    python -m fifa26_engine.scripts.wc2026_team_stats --sync --team mexico
    ```
 
+   **Regenerate upcoming predictions** (after model or data changes):
+
+   ```bash
+   python -m fifa26_engine.scripts.sync_wc2026_data
+   python scripts/predict_upcoming.py --sync --all
+   ```
+
+   France/Mexico knockout fixtures should show draw probabilities well below 60% with model `1.0.0-rc1`.
+
 ## Lock-down checklist
 
 Before hyperparameter tuning or UI integration, confirm provider configuration end-to-end:
