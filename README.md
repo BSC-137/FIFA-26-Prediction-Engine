@@ -158,6 +158,25 @@ Finished fixtures include actual `home_goals` / `away_goals` in the `fixture` bl
 
 Check `GET /status` for `last_fixture_refresh_utc`, `fixture_counts`, `ledger_prediction_count`, and any `last_refresh_error`.
 
+## Model Evaluation
+
+Walk-forward backtesting retrains the model on every finished fixture in chronological order with strict temporal guards:
+
+1. **`as_of = kickoff_utc`** for the target fixture
+2. **Training pool** — all `MatchResult` rows with `date < as_of` (via `filter_results_before`)
+3. **Context** — weather and pitch from kickoff-time information only; observed kickoff weather is used when present on a `MatchResult`
+4. **No ledger** — research backtests do not read or write `predictions.db`
+
+Run the CLI (mock data works offline):
+
+```bash
+python -m fifa26_engine.scripts.backtest_walkforward --mock
+```
+
+Outputs land in `reports/backtest_walkforward.json` and `reports/backtest_walkforward.md` with 1X2 accuracy, Brier score, log loss, O/U 2.5 and BTTS hit rates, goal MAE, and stage breakdowns.
+
+**Limitation:** mock weather history may be synthetic; treat offline backtest weather as illustrative rather than observed stadium conditions.
+
 ## Accuracy & Leakage Policy
 
 The engine maintains a **prediction ledger** (`predictions.db`) of pre-kickoff forecasts:
