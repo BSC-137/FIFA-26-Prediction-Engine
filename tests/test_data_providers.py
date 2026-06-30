@@ -124,7 +124,7 @@ def test_map_api_fixture_scheduled_status() -> None:
 
 
 def test_api_football_provider_requires_api_key() -> None:
-    settings = Settings(api_football_key="", use_mock_data=False)
+    settings = Settings(api_football_key="", use_mock_data=False, data_provider="api-football")
     with pytest.raises(ConfigError, match="API_FOOTBALL_KEY"):
         ApiFootballProvider(settings=settings)
 

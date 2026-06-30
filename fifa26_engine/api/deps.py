@@ -40,13 +40,11 @@ class AppState:
 
     @property
     def data_source(self) -> str:
-        if self.settings.effective_use_mock_data:
-            return "mock"
-        return "api-football"
+        return self.settings.effective_data_provider
 
     @property
     def provider_mode(self) -> str:
-        return "mock" if self.settings.effective_use_mock_data else "api"
+        return self.settings.effective_data_provider
 
     def invalidate_fixture_caches(self) -> None:
         """Clear API fixture caches and underlying provider cache."""
@@ -90,12 +88,13 @@ def build_app_state(settings: Settings | None = None) -> AppState:
     configure_logging(resolved.log_level)
 
     model_config = ModelConfig.from_settings(resolved)
-    provider_mode = "mock" if resolved.effective_use_mock_data else "api"
+    provider_mode = resolved.effective_data_provider
     logger.info(
-        "Startup config: provider_mode=%s api_key_configured=%s weather_provider=%s "
+        "Startup config: provider_mode=%s data_provider=%s api_key_configured=%s weather_provider=%s "
         "model_version=%s predictions_db_path=%s refresh_enabled=%s "
         "refresh_interval_seconds=%s",
         provider_mode,
+        resolved.data_provider,
         "yes" if resolved.has_api_key else "no",
         resolved.weather_provider,
         model_config.model_version,

@@ -92,7 +92,69 @@ WC2026_STADIUMS: dict[str, dict[str, str | float]] = {
         "lon": -75.1675,
         "pitch_type": "grass",
     },
+    "gillette stadium": {
+        "city": "Foxborough",
+        "country": "USA",
+        "lat": 42.0909,
+        "lon": -71.2643,
+        "pitch_type": "grass",
+    },
+    "bc place": {
+        "city": "Vancouver",
+        "country": "Canada",
+        "lat": 49.2768,
+        "lon": -123.1120,
+        "pitch_type": "artificial",
+    },
+    "estadio bbva": {
+        "city": "Guadalupe",
+        "country": "Mexico",
+        "lat": 25.6866,
+        "lon": -100.2455,
+        "pitch_type": "grass",
+    },
+    "estadio banorte": {
+        "city": "Monterrey",
+        "country": "Mexico",
+        "lat": 25.6866,
+        "lon": -100.2455,
+        "pitch_type": "grass",
+    },
+    "arrowhead stadium": {
+        "city": "Kansas City",
+        "country": "USA",
+        "lat": 39.0489,
+        "lon": -94.4839,
+        "pitch_type": "grass",
+    },
 }
+
+# openfootball uses host-city labels in the ``ground`` field.
+WC2026_GROUNDS: dict[str, str] = {
+    "mexico city": "Estadio Azteca",
+    "guadalajara (zapopan)": "Estadio Akron",
+    "monterrey (guadalupe)": "Estadio BBVA",
+    "toronto": "BMO Field",
+    "vancouver": "BC Place",
+    "los angeles (inglewood)": "SoFi Stadium",
+    "san francisco bay area (santa clara)": "Levi's Stadium",
+    "seattle": "Lumen Field",
+    "boston (foxborough)": "Gillette Stadium",
+    "new york/new jersey (east rutherford)": "MetLife Stadium",
+    "philadelphia": "Lincoln Financial Field",
+    "miami (miami gardens)": "Hard Rock Stadium",
+    "atlanta": "Mercedes-Benz Stadium",
+    "houston": "NRG Stadium",
+    "dallas (arlington)": "AT&T Stadium",
+    "kansas city": "Arrowhead Stadium",
+}
+
+
+def ground_to_stadium(ground: str | None) -> str | None:
+    """Map an openfootball ground label to a stadium name."""
+    if not ground:
+        return None
+    return WC2026_GROUNDS.get(ground.strip().lower())
 
 
 @dataclass(frozen=True)

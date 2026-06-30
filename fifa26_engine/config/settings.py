@@ -57,6 +57,25 @@ class Settings(BaseSettings):
             "Force mock provider when True. When unset, mock mode is used if no API key is set."
         ),
     )
+    data_provider: Literal["openfootball", "api-football", "mock"] = Field(
+        default="openfootball",
+        description=(
+            "Fixture data source: openfootball (free WC 2026 JSON, default), "
+            "api-football (paid/limited), or mock (offline sample)."
+        ),
+    )
+    openfootball_wc2026_url: str = Field(
+        default="https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json",
+        description="URL for the openfootball WC 2026 JSON feed.",
+    )
+    wc2026_data_path: str = Field(
+        default="data/wc2026/worldcup.json",
+        description="Local path to cached openfootball WC 2026 JSON (relative to project root).",
+    )
+    wc2026_auto_sync: bool = Field(
+        default=True,
+        description="Download WC 2026 JSON on first use when the local cache file is missing.",
+    )
     log_level: str = Field(
         default="INFO",
         description="Root logging level.",
@@ -175,9 +194,20 @@ class Settings(BaseSettings):
     @property
     def effective_use_mock_data(self) -> bool:
         """Return True when the mock provider should be used."""
-        if self.use_mock_data is not None:
-            return self.use_mock_data
-        return not self.has_api_key
+        if self.data_provider == "mock":
+            return True
+        if self.use_mock_data is True:
+            return True
+        if self.data_provider == "api-football" and not self.has_api_key:
+            return True
+        return False
+
+    @property
+    def effective_data_provider(self) -> Literal["openfootball", "api-football", "mock"]:
+        """Resolved fixture provider mode after applying mock overrides."""
+        if self.effective_use_mock_data:
+            return "mock"
+        return self.data_provider
 
 
 @lru_cache

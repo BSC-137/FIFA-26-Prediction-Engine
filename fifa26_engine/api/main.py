@@ -29,9 +29,13 @@ from fifa26_engine.api.schemas import (
     ModelInfoResponse,
     PredictionResponse,
     StatusResponse,
+    TeamStatsListResponse,
+    TeamTournamentStatsResponse,
 )
 from fifa26_engine.data.provider import Fixture
 from fifa26_engine.data.stadiums import enrich_fixture, resolve_stadium
+from fifa26_engine.data.team_metrics import compute_all_team_stats
+from fifa26_engine.data.wc2026_store import WC2026Store
 from fifa26_engine.models.temporal import resolve_as_of_utc
 from fifa26_engine.services.accuracy_service import AccuracyService
 from fifa26_engine.services.prediction_service import PredictionService
@@ -106,6 +110,35 @@ async def model_info(
         weather_min_bucket_samples=config.weather_min_bucket_samples,
         intercept_prior_goals=config.intercept_prior_goals,
         time_decay_half_life_days=config.time_decay_half_life_days,
+    )
+
+
+@app.get("/teams/stats", response_model=TeamStatsListResponse)
+async def team_tournament_stats(
+    request: Request,
+    team_id: str | None = Query(default=None, description="Filter to one team slug"),
+) -> TeamStatsListResponse:
+    """Return WC 2026 tournament stats for each national team (openfootball data)."""
+    state = get_app_state(request)
+    provider = state.prediction_service.provider
+    if not hasattr(provider, "_store"):
+        raise HTTPException(
+            status_code=400,
+            detail="Team stats require DATA_PROVIDER=openfootball.",
+        )
+    store: WC2026Store = provider._store  # type: ignore[attr-defined]
+    store.ensure_loaded()
+    stats = compute_all_team_stats(store)
+    if team_id is not None:
+        stats = [item for item in stats if item.team_id == team_id]
+        if not stats:
+            raise HTTPException(status_code=404, detail=f"Team not found: {team_id}")
+    return TeamStatsListResponse(
+        source="openfootball",
+        competition="FIFA World Cup 2026",
+        fixture_count=len(store.fixtures),
+        finished_count=sum(1 for fixture in store.fixtures if fixture.status == "finished"),
+        teams=[TeamTournamentStatsResponse(**item.to_dict()) for item in stats],
     )
 
 

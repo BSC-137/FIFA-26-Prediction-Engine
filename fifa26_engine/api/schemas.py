@@ -213,3 +213,32 @@ class ModelInfoResponse(BaseModel):
     weather_min_bucket_samples: int
     intercept_prior_goals: float
     time_decay_half_life_days: float
+
+
+class TeamTournamentStatsResponse(BaseModel):
+    """WC 2026 tournament stats for one national team."""
+
+    team_id: str
+    team_name: str
+    played: int
+    wins: int
+    draws: int
+    losses: int
+    goals_for: int
+    goals_against: int
+    goal_difference: int
+    points: int
+    avg_goals_for: float
+    avg_goals_against: float
+    clean_sheets: int
+    form: str
+
+
+class TeamStatsListResponse(BaseModel):
+    """All team tournament stats for the current WC 2026 data."""
+
+    source: str
+    competition: str
+    fixture_count: int
+    finished_count: int
+    teams: list[TeamTournamentStatsResponse]

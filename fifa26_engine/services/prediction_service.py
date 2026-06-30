@@ -14,6 +14,7 @@ from fifa26_engine.config import ModelConfig, Settings, get_settings
 from fifa26_engine.data.api_football import ApiFootballProvider
 from fifa26_engine.data.context_builder import build_match_context
 from fifa26_engine.data.mock_provider import MockFixtureProvider
+from fifa26_engine.data.openfootball_provider import OpenFootballProvider
 from fifa26_engine.data.provider import Fixture, FixtureProvider, MatchResult
 from fifa26_engine.data.stadiums import enrich_fixture
 from fifa26_engine.data.weather_provider import WeatherProvider, create_weather_provider
@@ -33,9 +34,13 @@ DEFAULT_TEAM_HISTORY_LIMIT = ModelConfig().team_history_limit
 def create_fixture_provider(settings: Settings | None = None) -> FixtureProvider:
     """Return the appropriate fixture provider based on configuration."""
     resolved = settings or get_settings()
-    if resolved.effective_use_mock_data:
+    mode = resolved.effective_data_provider
+    if mode == "mock":
         logger.info("Using MockFixtureProvider.")
         return MockFixtureProvider()
+    if mode == "openfootball":
+        logger.info("Using OpenFootballProvider (WC 2026 tournament data).")
+        return OpenFootballProvider(settings=resolved)
     logger.info("Using ApiFootballProvider.")
     return ApiFootballProvider(settings=resolved)
 

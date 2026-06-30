@@ -94,6 +94,13 @@ class FixtureRefreshService:
         self._state.invalidate_prediction_caches()
         self.metadata.last_prediction_cache_clear_utc = datetime.now(timezone.utc)
 
+        provider = self._state.prediction_service.provider
+        if hasattr(provider, "sync_from_remote"):
+            try:
+                await provider.sync_from_remote()  # type: ignore[operator]
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Remote WC 2026 sync failed, using local cache: %s", exc)
+
         try:
             all_fixtures = await self._state.prediction_service.provider.get_fixtures(
                 status=None,

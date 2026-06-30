@@ -4,7 +4,7 @@ A modular Python engine for predicting FIFA World Cup 2026 match outcomes. The p
 
 ## Features
 
-- **Data providers** — abstract `FixtureProvider` with API-Football and offline mock implementations
+- **Data providers** — abstract `FixtureProvider` with **openfootball WC 2026 JSON** (default, free), API-Football (optional), and offline mock
 - **Strength model** — Poisson attack/defense ratings with home advantage and shrinkage
 - **Simulator** — vectorized Dixon–Coles score matrix and market aggregation
 - **Weather & pitch model** — team affinity modifiers from historical conditions (see below)
@@ -76,25 +76,38 @@ Set `WEATHER_PROVIDER=openmeteo` in `.env` for live forecasts (no API key requir
    copy .env.example .env      # Windows
    ```
 
-   Edit `.env` and paste your [API-Football](https://www.api-football.com/) key:
+   Edit `.env` if needed. **No API key is required** for the default WC 2026 data source:
 
    ```env
-   API_FOOTBALL_KEY=your_key_here
-   USE_MOCK_DATA=false
+   DATA_PROVIDER=openfootball
+   WEATHER_PROVIDER=openmeteo
    ```
+
+   Optional: set `API_FOOTBALL_KEY` only if you switch to `DATA_PROVIDER=api-football`.
 
    Settings load from `project_root/.env` automatically, even when uvicorn is started from another working directory.
 
    **Verify configuration** after `.\scripts\run_api.ps1` or `./scripts/run_api.sh`:
 
-   | Endpoint | Expected (live API) |
+   | Endpoint | Expected (default) |
    |----------|---------------------|
-   | `GET /health` | `"source": "api-football"` |
-   | `GET /status` | `"provider_mode": "api"` |
+   | `GET /health` | `"source": "openfootball"` |
+   | `GET /status` | `"provider_mode": "openfootball"` |
 
-   With no key (or `USE_MOCK_DATA=true`), `/health` returns `"source": "mock"`.
+   Use `USE_MOCK_DATA=true` or `DATA_PROVIDER=mock` for offline sample data.
 
-   **Mock data works without an API key.** Leave `API_FOOTBALL_KEY` empty to develop offline.
+   **Sync latest WC 2026 results** (downloads from [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json)):
+
+   ```bash
+   python -m fifa26_engine.scripts.sync_wc2026_data
+   ```
+
+   **Per-team tournament stats** (played, W/D/L, goals, form — WC 2026 only):
+
+   ```bash
+   python -m fifa26_engine.scripts.wc2026_team_stats
+   python -m fifa26_engine.scripts.wc2026_team_stats --sync --team mexico
+   ```
 
 ## Lock-down checklist
 
@@ -126,7 +139,7 @@ Before hyperparameter tuning or UI integration, confirm provider configuration e
 
 2. **Start the API** and confirm startup logs show `provider_mode`, `api_key_configured`, `weather_provider`, and `model_version`.
 
-3. **Hit `/health` and `/status`** — live mode should report `api-football` / `api`.
+3. **Hit `/health` and `/status`** — default mode should report `openfootball`.
 
 ## Running the API
 
@@ -149,8 +162,9 @@ Open [http://localhost:8000/docs](http://localhost:8000/docs) for interactive AP
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Liveness check + data source (`mock` or `api-football`) |
+| `GET` | `/health` | Liveness check + data source (`openfootball`, `mock`, or `api-football`) |
 | `GET` | `/status` | Refresh timestamps, provider mode, fixture counts by status |
+| `GET` | `/teams/stats` | WC 2026 tournament stats per team (`?team_id=mexico` optional) |
 | `GET` | `/fixtures` | List fixtures (`?status=scheduled\|live\|finished`, `?limit=100`) |
 | `GET` | `/fixtures/refresh` | Bust fixture + prediction caches, return fresh list |
 | `GET` | `/predict/{fixture_id}` | Full prediction for a stored fixture |

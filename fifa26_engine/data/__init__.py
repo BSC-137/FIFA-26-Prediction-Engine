@@ -2,6 +2,7 @@
 
 from fifa26_engine.data.api_football import ApiFootballProvider
 from fifa26_engine.data.mock_provider import MockFixtureProvider
+from fifa26_engine.data.openfootball_provider import OpenFootballProvider
 from fifa26_engine.data.provider import Fixture, FixtureProvider, MatchResult, Team
 
 __all__ = [
@@ -10,5 +11,6 @@ __all__ = [
     "FixtureProvider",
     "MatchResult",
     "MockFixtureProvider",
+    "OpenFootballProvider",
     "Team",
 ]
