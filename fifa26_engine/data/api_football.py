@@ -16,6 +16,9 @@ from fifa26_engine.utils.logging import get_logger
 logger = get_logger(__name__)
 
 _RETRYABLE_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504})
+# Free API-Football tier: date-window for current World Cup fixtures
+_FREE_TIER_WC_DATES = ("2026-06-29", "2026-06-30", "2026-07-01")
+_FALLBACK_HISTORY_SEASONS = (2024, 2022)
 
 
 class ApiFootballProvider:
@@ -40,6 +43,8 @@ class ApiFootballProvider:
         self._cache: TTLCache[str, Any] = cache or TTLCache(
             default_ttl_seconds=self._settings.cache_ttl_seconds,
         )
+        self._last_param_denied = False
+        self._wc_date_items: list[dict[str, Any]] | None = None
         self._ensure_api_key()
 
     def _ensure_api_key(self) -> None:
@@ -203,6 +208,81 @@ class ApiFootballProvider:
             return []
         return fixtures[:limit]
 
+    def _is_last_parameter_denied(self, exc: ConfigError) -> bool:
+        message = str(exc).lower()
+        return "last parameter" in message or "last parameter" in message.replace("_", " ")
+
+    async def _fetch_team_results_by_seasons(self, team_id: str) -> list[MatchResult]:
+        """Season-based history fallback when ``last`` is unavailable (free API tier)."""
+        combined: dict[str, MatchResult] = {}
+        for season in _FALLBACK_HISTORY_SEASONS:
+            cache_key = self._cache_key("team_season", team_id, season)
+            cached = self._cache.get(cache_key)
+            if cached is not None:
+                for result in cached:
+                    combined[result.match_id] = result
+                continue
+            try:
+                payload = await self._request(
+                    "/fixtures",
+                    params={"team": team_id, "season": season},
+                )
+                season_results = self._map_team_results(payload)
+                self._cache.set(cache_key, season_results)
+                for result in season_results:
+                    combined[result.match_id] = result
+            except ConfigError as exc:
+                logger.warning(
+                    "Season %s history unavailable for team_id=%s: %s",
+                    season,
+                    team_id,
+                    exc,
+                )
+            except httpx.HTTPStatusError as exc:
+                logger.warning(
+                    "Season %s history HTTP %s for team_id=%s",
+                    season,
+                    exc.response.status_code,
+                    team_id,
+                )
+        return list(combined.values())
+
+    async def _load_wc_date_items(self) -> list[dict[str, Any]]:
+        """Load and cache World Cup fixtures for the free-tier date window (once)."""
+        if self._wc_date_items is not None:
+            return self._wc_date_items
+        items: list[dict[str, Any]] = []
+        for day in _FREE_TIER_WC_DATES:
+            try:
+                payload = await self._request("/fixtures", params={"date": day})
+                items.extend(payload.get("response", []))
+            except ConfigError:
+                continue
+        self._wc_date_items = items
+        return items
+
+    async def _fetch_team_results_from_wc_dates(self, team_id: str) -> list[MatchResult]:
+        """Include finished matches from the free-tier World Cup date window."""
+        combined: dict[str, MatchResult] = {}
+        for item in await self._load_wc_date_items():
+            teams = item.get("teams", {})
+            home_id = str(teams.get("home", {}).get("id", ""))
+            away_id = str(teams.get("away", {}).get("id", ""))
+            if team_id not in {home_id, away_id}:
+                continue
+            mapped = map_api_fixture_to_match_result(item)
+            if mapped is not None:
+                combined[mapped.match_id] = mapped
+        return list(combined.values())
+
+    async def _team_results_fallback(self, team_id: str) -> list[MatchResult]:
+        merged: dict[str, MatchResult] = {}
+        for result in await self._fetch_team_results_by_seasons(team_id):
+            merged[result.match_id] = result
+        for result in await self._fetch_team_results_from_wc_dates(team_id):
+            merged[result.match_id] = result
+        return list(merged.values())
+
     async def get_team_results(
         self,
         team_id: str,
@@ -217,11 +297,26 @@ class ApiFootballProvider:
         if cached is not None:
             return cached
 
-        payload = await self._request(
-            "/fixtures",
-            params={"team": team_id, "last": limit},
-        )
-        results = self._map_team_results(payload)
+        results: list[MatchResult]
+        if not self._last_param_denied:
+            try:
+                payload = await self._request(
+                    "/fixtures",
+                    params={"team": team_id, "last": limit},
+                )
+                results = self._map_team_results(payload)
+            except ConfigError as exc:
+                if not self._is_last_parameter_denied(exc):
+                    raise
+                self._last_param_denied = True
+                logger.info(
+                    "Falling back to season/date team history for team_id=%s (free API tier)",
+                    team_id,
+                )
+                results = await self._team_results_fallback(team_id)
+        else:
+            results = await self._team_results_fallback(team_id)
+
         results.sort(key=lambda match: match.date, reverse=True)
         self._cache.set(cache_key, results)
         logger.info("Fetched %s historical results for team_id=%s", len(results), team_id)

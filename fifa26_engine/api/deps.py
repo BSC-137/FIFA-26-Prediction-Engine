@@ -10,7 +10,7 @@ from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 
-from fifa26_engine.config import Settings, get_settings
+from fifa26_engine.config import ModelConfig, Settings, get_settings
 from fifa26_engine.data.weather_provider import create_weather_provider
 from fifa26_engine.services.accuracy_service import AccuracyService
 from fifa26_engine.services.ledger_service import LedgerService
@@ -89,11 +89,19 @@ def build_app_state(settings: Settings | None = None) -> AppState:
     resolved = settings or get_settings()
     configure_logging(resolved.log_level)
 
-    provider_label = "mock" if resolved.effective_use_mock_data else "api-football"
+    model_config = ModelConfig.from_settings(resolved)
+    provider_mode = "mock" if resolved.effective_use_mock_data else "api"
     logger.info(
-        "Data provider: %s (key configured: %s)",
-        provider_label,
+        "Startup config: provider_mode=%s api_key_configured=%s weather_provider=%s "
+        "model_version=%s predictions_db_path=%s refresh_enabled=%s "
+        "refresh_interval_seconds=%s",
+        provider_mode,
         "yes" if resolved.has_api_key else "no",
+        resolved.weather_provider,
+        model_config.model_version,
+        resolved.predictions_db_path,
+        resolved.refresh_enabled,
+        resolved.refresh_interval_seconds,
     )
 
     weather_provider = create_weather_provider(resolved)

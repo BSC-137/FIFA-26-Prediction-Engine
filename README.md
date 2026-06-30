@@ -96,6 +96,38 @@ Set `WEATHER_PROVIDER=openmeteo` in `.env` for live forecasts (no API key requir
 
    **Mock data works without an API key.** Leave `API_FOOTBALL_KEY` empty to develop offline.
 
+## Lock-down checklist
+
+Before hyperparameter tuning or UI integration, confirm provider configuration end-to-end:
+
+1. **Validate live data** — after configuring `.env`, run:
+
+   ```bash
+   # Windows
+   .\scripts\validate_live.ps1
+
+   # macOS / Linux
+   chmod +x scripts/validate_live.sh && ./scripts/validate_live.sh
+   ```
+
+   Offline smoke test (no API key):
+
+   ```bash
+   python -m fifa26_engine.scripts.validate_live --mock
+   ```
+
+   Write machine-readable results to `reports/validate_live.json`:
+
+   ```bash
+   .\scripts\validate_live.ps1 --json
+   ```
+
+   Exit code `0` means all critical checks passed (warnings are allowed). The script never prints `API_FOOTBALL_KEY`.
+
+2. **Start the API** and confirm startup logs show `provider_mode`, `api_key_configured`, `weather_provider`, and `model_version`.
+
+3. **Hit `/health` and `/status`** — live mode should report `api-football` / `api`.
+
 ## Running the API
 
 Start the server with the helper script or uvicorn directly:

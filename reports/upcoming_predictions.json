@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-06-30T16:00:31.032860+00:00",
+  "model_version": "0.2.0",
+  "api_dates_queried": [
+    "2026-06-29",
+    "2026-06-30",
+    "2026-07-01"
+  ],
+  "n_fixtures": 5,
+  "predictions": [
+    {
+      "fixture_id": "1564789",
+      "match": "Ivory Coast vs Norway",
+      "kickoff_utc": "2026-06-30T17:00:00+00:00",
+      "venue": "AT&T Stadium",
+      "stage": "Round of 32",
+      "probabilities": {
+        "home_win": 0.1241,
+        "draw": 0.2293,
+        "away_win": 0.6466,
+        "btts_yes": 0.4795,
+        "over_2_5": 0.5241
+      },
+      "expected_goals": {
+        "base_home": 0.801,
+        "base_away": 2.057,
+        "adjusted_home": 0.777,
+        "adjusted_away": 1.996
+      },
+      "weather": {
+        "temperature_c": 32.5,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat"
+      },
+      "adjustments": [
+        "knockout_caution"
+      ],
+      "weather_labels": [],
+      "prob_sum": 1.0,
+      "status": "ok"
+    },
+    {
+      "fixture_id": "1565177",
+      "match": "France vs Sweden",
+      "kickoff_utc": "2026-06-30T21:00:00+00:00",
+      "venue": "MetLife Stadium",
+      "stage": "Round of 32",
+      "probabilities": {
+        "home_win": 0.2525,
+        "draw": 0.6184,
+        "away_win": 0.1291,
+        "btts_yes": 0.0629,
+        "over_2_5": 0.0206
+      },
+      "expected_goals": {
+        "base_home": 0.377,
+        "base_away": 0.214,
+        "adjusted_home": 0.366,
+        "adjusted_away": 0.207
+      },
+      "weather": {
+        "temperature_c": 34.0,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat"
+      },
+      "adjustments": [
+        "knockout_caution"
+      ],
+      "weather_labels": [],
+      "prob_sum": 1.0,
+      "status": "ok"
+    },
+    {
+      "fixture_id": "1567306",
+      "match": "Mexico vs Ecuador",
+      "kickoff_utc": "2026-07-01T01:00:00+00:00",
+      "venue": "Estadio Banorte",
+      "stage": "Round of 32",
+      "probabilities": {
+        "home_win": 0.1181,
+        "draw": 0.7572,
+        "away_win": 0.1247,
+        "btts_yes": 0.0226,
+        "over_2_5": 0.0039
+      },
+      "expected_goals": {
+        "base_home": 0.15,
+        "base_away": 0.163,
+        "adjusted_home": 0.15,
+        "adjusted_away": 0.158
+      },
+      "weather": {
+        "temperature_c": null,
+        "precipitation_mm": null,
+        "weather_code": null
+      },
+      "adjustments": [
+        "knockout_caution"
+      ],
+      "weather_labels": [],
+      "prob_sum": 1.0,
+      "status": "ok"
+    },
+    {
+      "fixture_id": "1567307",
+      "match": "England vs Congo DR",
+      "kickoff_utc": "2026-07-01T16:00:00+00:00",
+      "venue": "Mercedes-Benz Stadium",
+      "stage": "Round of 32",
+      "probabilities": {
+        "home_win": 0.5208,
+        "draw": 0.3891,
+        "away_win": 0.0901,
+        "btts_yes": 0.1554,
+        "over_2_5": 0.1293
+      },
+      "expected_goals": {
+        "base_home": 1.003,
+        "base_away": 0.275,
+        "adjusted_home": 0.973,
+        "adjusted_away": 0.267
+      },
+      "weather": {
+        "temperature_c": 34.6,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat"
+      },
+      "adjustments": [
+        "knockout_caution"
+      ],
+      "weather_labels": [],
+      "prob_sum": 1.0,
+      "status": "ok"
+    },
+    {
+      "fixture_id": "1567308",
+      "match": "Belgium vs Senegal",
+      "kickoff_utc": "2026-07-01T20:00:00+00:00",
+      "venue": "Lumen Field",
+      "stage": "Round of 32",
+      "probabilities": {
+        "home_win": 0.0687,
+        "draw": 0.3848,
+        "away_win": 0.5465,
+        "btts_yes": 0.1248,
+        "over_2_5": 0.1186
+      },
+      "expected_goals": {
+        "base_home": 0.213,
+        "base_away": 1.015,
+        "adjusted_home": 0.206,
+        "adjusted_away": 0.985
+      },
+      "weather": {
+        "temperature_c": 17.6,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear"
+      },
+      "adjustments": [
+        "knockout_caution"
+      ],
+      "weather_labels": [],
+      "prob_sum": 1.0,
+      "status": "ok"
+    }
+  ]
+}

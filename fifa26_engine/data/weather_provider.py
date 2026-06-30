@@ -54,6 +54,10 @@ def _nearest_hourly_index(times: list[str], kickoff_utc: datetime) -> int:
     best_delta = float("inf")
     for index, time_str in enumerate(times):
         hour = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+        if hour.tzinfo is None:
+            hour = hour.replace(tzinfo=timezone.utc)
+        else:
+            hour = hour.astimezone(timezone.utc)
         delta = abs((hour - kickoff).total_seconds())
         if delta < best_delta:
             best_delta = delta
