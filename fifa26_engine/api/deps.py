@@ -88,6 +88,14 @@ def build_app_state(settings: Settings | None = None) -> AppState:
     """Construct application state with configured services."""
     resolved = settings or get_settings()
     configure_logging(resolved.log_level)
+
+    provider_label = "mock" if resolved.effective_use_mock_data else "api-football"
+    logger.info(
+        "Data provider: %s (key configured: %s)",
+        provider_label,
+        "yes" if resolved.has_api_key else "no",
+    )
+
     weather_provider = create_weather_provider(resolved)
     service = PredictionService(
         provider=create_fixture_provider(resolved),
@@ -95,7 +103,11 @@ def build_app_state(settings: Settings | None = None) -> AppState:
         weather_provider=weather_provider,
     )
     store = PredictionStore(resolved.predictions_db_path)
-    ledger = LedgerService(service, store)
+    ledger = LedgerService(
+        service,
+        store,
+        model_version=service.model_config.model_version,
+    )
     accuracy = AccuracyService(ledger, service)
     state = AppState(
         settings=resolved,

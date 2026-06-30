@@ -57,13 +57,44 @@ Set `WEATHER_PROVIDER=openmeteo` in `.env` for live forecasts (no API key requir
 
 4. **Configure environment**
 
+   Local secrets live in **`project_root/.env`** (same folder as `pyproject.toml`). This file is **gitignored** — never commit it.
+
+   Create it from the template:
+
    ```bash
-   cp .env.example .env
+   # Windows
+   .\scripts\setup_env.ps1
+
+   # macOS / Linux
+   chmod +x scripts/setup_env.sh && ./scripts/setup_env.sh
    ```
 
-   Edit `.env` and set `API_FOOTBALL_KEY` if you have an [API-Football](https://www.api-football.com/) key.
+   Or copy manually:
 
-   **Mock data works without an API key.** Leave `API_FOOTBALL_KEY` empty to develop offline using `MockFixtureProvider`.
+   ```bash
+   cp .env.example .env        # macOS / Linux
+   copy .env.example .env      # Windows
+   ```
+
+   Edit `.env` and paste your [API-Football](https://www.api-football.com/) key:
+
+   ```env
+   API_FOOTBALL_KEY=your_key_here
+   USE_MOCK_DATA=false
+   ```
+
+   Settings load from `project_root/.env` automatically, even when uvicorn is started from another working directory.
+
+   **Verify configuration** after `.\scripts\run_api.ps1` or `./scripts/run_api.sh`:
+
+   | Endpoint | Expected (live API) |
+   |----------|---------------------|
+   | `GET /health` | `"source": "api-football"` |
+   | `GET /status` | `"provider_mode": "api"` |
+
+   With no key (or `USE_MOCK_DATA=true`), `/health` returns `"source": "mock"`.
+
+   **Mock data works without an API key.** Leave `API_FOOTBALL_KEY` empty to develop offline.
 
 ## Running the API
 
@@ -92,6 +123,7 @@ Open [http://localhost:8000/docs](http://localhost:8000/docs) for interactive AP
 | `GET` | `/fixtures/refresh` | Bust fixture + prediction caches, return fresh list |
 | `GET` | `/predict/{fixture_id}` | Full prediction for a stored fixture |
 | `GET` | `/predict` | Manual matchup (`home_team_id`, `away_team_id`, `kickoff_utc`, …) |
+| `GET` | `/model/info` | Active model hyperparameters and version |
 
 Responses are cached in-memory: **fixtures 5 min**, **predictions 10 min** (configurable via `.env`).
 
@@ -177,6 +209,37 @@ Outputs land in `reports/backtest_walkforward.json` and `reports/backtest_walkfo
 
 **Limitation:** mock weather history may be synthetic; treat offline backtest weather as illustrative rather than observed stadium conditions.
 
+Tune core hyperparameters offline (grid search over `dixon_coles_rho`, `shrinkage_prior_matches`, `team_history_limit`):
+
+```bash
+python -m fifa26_engine.scripts.tune_hyperparams --mock
+```
+
+Results are written to `reports/tuning_results.json` ranked by walk-forward log loss.
+
+## Hyperparameters
+
+Model settings live in `fifa26_engine/config/model_config.py` and are overridable via `.env`:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TEAM_HISTORY_LIMIT` | `30` | Max recent NT results per team used for fitting |
+| `SHRINKAGE_PRIOR_MATCHES` | `8.0` | Pseudo-match count for rating shrinkage |
+| `DIXON_COLES_RHO` | `-0.13` | Low-score correlation in the simulator (empty = default) |
+| `WEATHER_DELTA_SCALE` | `0.35` | Scale for weather affinity xG modifiers |
+| `WEATHER_MIN_BUCKET_SAMPLES` | `5` | Min samples before full weather bucket weight |
+| `INTERCEPT_PRIOR_GOALS` | `1.35` | Baseline scoring rate when no training data |
+| `TIME_DECAY_HALF_LIFE_DAYS` | `0` | Exponential decay half-life for match weights (`0` = off) |
+| `MODEL_VERSION` | `0.2.0` | Version tag in ledger rows and API responses |
+
+Inspect the active configuration at runtime:
+
+```
+GET /model/info
+```
+
+Adjustment-rule constants (injuries, rest, knockout caps) are **not** tuned by the grid-search script.
+
 ## Accuracy & Leakage Policy
 
 The engine maintains a **prediction ledger** (`predictions.db`) of pre-kickoff forecasts:
@@ -200,7 +263,7 @@ Ledger sync runs automatically during background fixture refresh and on `GET /fi
 
 ```
 fifa26_engine/
-  config.py              # Environment configuration
+  config/                # Settings and ModelConfig hyperparameters
   data/                  # Fixture data providers
   models/                # Prediction models (placeholders)
   api/                   # FastAPI app and schemas

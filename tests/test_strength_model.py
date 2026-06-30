@@ -75,13 +75,23 @@ def test_neutral_venue_reduces_home_xg(fitted_model: TeamStrengthModel) -> None:
     assert home_xg_neutral < home_xg_with_adv
 
 
-def test_unknown_team_falls_back_gracefully(fitted_model: TeamStrengthModel) -> None:
+def test_unknown_team_uses_competition_average(fitted_model: TeamStrengthModel) -> None:
     home_xg, away_xg = fitted_model.expected_goals("STR", "UNKNOWN_TEAM", is_neutral=False)
     unknown_params = fitted_model.get_team_params("UNKNOWN_TEAM")
+    known_attacks = [
+        fitted_model.get_team_params(team_id)["attack"]
+        for team_id in fitted_model.team_params
+    ]
+    known_defenses = [
+        fitted_model.get_team_params(team_id)["defense"]
+        for team_id in fitted_model.team_params
+    ]
+    expected_attack = sum(known_attacks) / len(known_attacks)
+    expected_defense = sum(known_defenses) / len(known_defenses)
 
-    assert unknown_params["attack"] == 0.0
-    assert unknown_params["defense"] == 0.0
     assert unknown_params["matches_played"] == 0
+    assert unknown_params["attack"] == pytest.approx(expected_attack)
+    assert unknown_params["defense"] == pytest.approx(expected_defense)
     assert 0.15 <= home_xg <= 3.8
     assert 0.15 <= away_xg <= 3.8
 

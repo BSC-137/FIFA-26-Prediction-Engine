@@ -8,19 +8,22 @@ multiplicative adjustments applied to base xG before structured context adjustme
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from fifa26_engine.data.provider import MatchResult, PitchType, WeatherConditions
+
+if TYPE_CHECKING:
+    from fifa26_engine.config.model_config import ModelConfig
 
 TempBucket = Literal["cold", "mild", "hot", "unknown"]
 RainBucket = Literal["dry", "wet", "unknown"]
 AffinityBucket = tuple[TempBucket, RainBucket, PitchType]
 
-MIN_BUCKET_SAMPLES = 5
-SHRINKAGE_PRIOR_MATCHES = 8.0
+DEFAULT_MIN_BUCKET_SAMPLES = 5
+DEFAULT_SHRINKAGE_PRIOR_MATCHES = 8.0
+DEFAULT_DELTA_SCALE = 0.35
 MODIFIER_MIN = 0.94
 MODIFIER_MAX = 1.06
-DELTA_SCALE = 0.35
 
 
 @dataclass
@@ -66,21 +69,38 @@ def _clamp_modifier(value: float) -> float:
     return max(MODIFIER_MIN, min(MODIFIER_MAX, value))
 
 
-def _shrink(delta: float, sample_size: int) -> float:
-    weight = sample_size / (sample_size + SHRINKAGE_PRIOR_MATCHES)
-    return delta * weight
-
-
 class WeatherAffinityEngine:
     """Deterministic weather/pitch affinity engine for national teams."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        delta_scale: float = DEFAULT_DELTA_SCALE,
+        min_bucket_samples: int = DEFAULT_MIN_BUCKET_SAMPLES,
+        shrinkage_prior_matches: float = DEFAULT_SHRINKAGE_PRIOR_MATCHES,
+    ) -> None:
+        self._delta_scale = delta_scale
+        self._min_bucket_samples = min_bucket_samples
+        self._shrinkage_prior = shrinkage_prior_matches
         self._profiles: dict[str, TeamAffinityProfile] = {}
         self._is_fitted = False
+
+    @classmethod
+    def from_config(cls, model_config: ModelConfig) -> WeatherAffinityEngine:
+        """Create an unfitted engine from ``ModelConfig``."""
+        return cls(
+            delta_scale=model_config.weather_delta_scale,
+            min_bucket_samples=model_config.weather_min_bucket_samples,
+            shrinkage_prior_matches=model_config.shrinkage_prior_matches,
+        )
 
     @property
     def is_fitted(self) -> bool:
         return self._is_fitted
+
+    def _shrink(self, delta: float, sample_size: int) -> float:
+        weight = sample_size / (sample_size + self._shrinkage_prior)
+        return delta * weight
 
     def fit(self, results: list[MatchResult]) -> None:
         """Fit team affinity profiles from historical results."""
@@ -119,9 +139,9 @@ class WeatherAffinityEngine:
                 avg_conceded = sum(item[1] for item in values) / count
                 scored_delta = (avg_scored - profile.baseline_scored) / max(profile.baseline_scored, 0.5)
                 conceded_delta = (profile.baseline_conceded - avg_conceded) / max(profile.baseline_conceded, 0.5)
-                if count < MIN_BUCKET_SAMPLES:
-                    scored_delta = _shrink(scored_delta, count)
-                    conceded_delta = _shrink(conceded_delta, count)
+                if count < self._min_bucket_samples:
+                    scored_delta = self._shrink(scored_delta, count)
+                    conceded_delta = self._shrink(conceded_delta, count)
                 profile.bucket_deltas[bucket] = {
                     "scored_delta": scored_delta,
                     "conceded_delta": conceded_delta,
@@ -132,8 +152,15 @@ class WeatherAffinityEngine:
         self._is_fitted = True
 
     @staticmethod
-    def from_results(results: list[MatchResult]) -> WeatherAffinityEngine:
-        engine = WeatherAffinityEngine()
+    def from_results(
+        results: list[MatchResult],
+        *,
+        model_config: ModelConfig | None = None,
+    ) -> WeatherAffinityEngine:
+        if model_config is not None:
+            engine = WeatherAffinityEngine.from_config(model_config)
+        else:
+            engine = WeatherAffinityEngine()
         engine.fit(results)
         return engine
 
@@ -154,8 +181,9 @@ class WeatherAffinityEngine:
 
         scored_delta = deltas["scored_delta"]
         conceded_delta = deltas["conceded_delta"]
-        attack_factor = 1.0 + _shrink(scored_delta, profile.bucket_counts.get(bucket, 0)) * DELTA_SCALE
-        defense_factor = 1.0 + _shrink(conceded_delta, profile.bucket_counts.get(bucket, 0)) * DELTA_SCALE
+        bucket_count = profile.bucket_counts.get(bucket, 0)
+        attack_factor = 1.0 + self._shrink(scored_delta, bucket_count) * self._delta_scale
+        defense_factor = 1.0 + self._shrink(conceded_delta, bucket_count) * self._delta_scale
         combined = (attack_factor + defense_factor) / 2.0
         combined = _clamp_modifier(combined)
 

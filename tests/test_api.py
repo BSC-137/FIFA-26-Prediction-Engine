@@ -40,6 +40,18 @@ def test_health(client: TestClient) -> None:
     assert body["source"] == "mock"
 
 
+def test_model_info_returns_hyperparameters(client: TestClient) -> None:
+    response = client.get("/model/info")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["model_version"]
+    assert body["team_history_limit"] > 0
+    assert body["shrinkage_prior_matches"] > 0
+    assert -0.2 < body["dixon_coles_rho"] < 0.0
+    assert body["weather_delta_scale"] > 0.0
+    assert body["intercept_prior_goals"] > 0.0
+
+
 def test_fixtures_returns_scheduled_and_finished(client: TestClient) -> None:
     response = client.get("/fixtures", params={"limit": 100})
     assert response.status_code == 200

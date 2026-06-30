@@ -26,6 +26,7 @@ from fifa26_engine.api.schemas import (
     AccuracyRecomputeResponse,
     AccuracySummaryResponse,
     FixturesListResponse,
+    ModelInfoResponse,
     PredictionResponse,
     StatusResponse,
 )
@@ -87,6 +88,24 @@ async def system_status(request: Request) -> StatusResponse:
         refresh_enabled=state.settings.refresh_enabled,
         last_refresh_error=metadata.last_refresh_error if metadata else None,
         ledger_prediction_count=state.prediction_store.count_predictions(),
+    )
+
+
+@app.get("/model/info", response_model=ModelInfoResponse)
+async def model_info(
+    service: PredictionService = Depends(get_prediction_service),
+) -> ModelInfoResponse:
+    """Return active model hyperparameters and version for UI display."""
+    config = service.model_config
+    return ModelInfoResponse(
+        model_version=config.model_version,
+        team_history_limit=config.team_history_limit,
+        shrinkage_prior_matches=config.shrinkage_prior_matches,
+        dixon_coles_rho=config.dixon_coles_rho,
+        weather_delta_scale=config.weather_delta_scale,
+        weather_min_bucket_samples=config.weather_min_bucket_samples,
+        intercept_prior_goals=config.intercept_prior_goals,
+        time_decay_half_life_days=config.time_decay_half_life_days,
     )
 
 
@@ -209,6 +228,7 @@ async def _predict_fixture(
         breakdown,
         as_of_utc=as_of,
         pitch_type=pitch,
+        model_version=service.model_config.model_version,
     )
     state.predictions_cache.set(
         cache_key,

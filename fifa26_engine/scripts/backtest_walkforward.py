@@ -16,7 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from fifa26_engine.config import Settings, get_settings
+from fifa26_engine.config import ModelConfig, Settings, get_settings
+from fifa26_engine.config.model_config import DEFAULT_MODEL_VERSION
 from fifa26_engine.data.provider import Fixture, FixtureProvider, MatchResult, WeatherConditions
 from fifa26_engine.data.stadiums import enrich_fixture, resolve_stadium
 from fifa26_engine.data.weather_provider import WeatherProvider, _bucket_weather_code, create_weather_provider
@@ -29,15 +30,14 @@ from fifa26_engine.models.weather_affinity import WeatherAffinityEngine
 from fifa26_engine.services.prediction_service import create_fixture_provider
 
 UTC = timezone.utc
-MODEL_VERSION = "walkforward-v1"
+
+MODEL_VERSION = f"walkforward-{DEFAULT_MODEL_VERSION}"
 LIMITATION_NOTE = (
     "Mock weather history may be synthetic; observed kickoff weather is used when "
     "present on a MatchResult, otherwise a weather-provider forecast at kickoff."
 )
 
 DEFAULT_MAX_GOALS = 10
-DEFAULT_DIXON_COLES_RHO = -0.13
-DEFAULT_TEAM_HISTORY_LIMIT = 500
 
 
 def _is_knockout_stage(stage: str) -> bool:
@@ -90,7 +90,7 @@ async def gather_team_results(
     provider: FixtureProvider,
     team_ids: set[str],
     *,
-    limit: int = DEFAULT_TEAM_HISTORY_LIMIT,
+    limit: int = ModelConfig().team_history_limit,
 ) -> list[MatchResult]:
     """Load and deduplicate national-team history for all teams in scope."""
     combined: dict[str, MatchResult] = {}
@@ -171,17 +171,18 @@ async def walkforward_predict_fixture(
     *,
     weather_by_match_id: dict[str, MatchResult],
     weather_provider: WeatherProvider,
+    model_config: ModelConfig | None = None,
     max_goals: int = DEFAULT_MAX_GOALS,
-    dixon_coles_rho: float = DEFAULT_DIXON_COLES_RHO,
 ) -> dict[str, Any]:
     """Predict markets for one fixture using a pre-fit training pool."""
+    config = model_config or ModelConfig()
     enriched = enrich_fixture(fixture)
-    strength_model = TeamStrengthModel.from_results(training_results)
+    strength_model = TeamStrengthModel.from_results(training_results, model_config=config)
     xg_prediction = strength_model.predict_fixture(enriched)
     base_home_xg = xg_prediction["home_xg"]
     base_away_xg = xg_prediction["away_xg"]
 
-    affinity_engine = WeatherAffinityEngine.from_results(training_results)
+    affinity_engine = WeatherAffinityEngine.from_results(training_results, model_config=config)
     context = await build_backtest_match_context(
         enriched,
         weather_by_match_id=weather_by_match_id,
@@ -206,7 +207,7 @@ async def walkforward_predict_fixture(
         home_xg=adjusted_home_xg,
         away_xg=adjusted_away_xg,
         max_goals=max_goals,
-        dixon_coles_rho=dixon_coles_rho,
+        dixon_coles_rho=config.dixon_coles_rho,
     ).simulate()
     markets = simulation.markets
 
@@ -351,12 +352,12 @@ def _evaluate_row(
 async def run_walkforward_backtest(
     provider: FixtureProvider,
     *,
+    model_config: ModelConfig | None = None,
     weather_provider: WeatherProvider | None = None,
     max_goals: int = DEFAULT_MAX_GOALS,
-    dixon_coles_rho: float = DEFAULT_DIXON_COLES_RHO,
-    team_history_limit: int = DEFAULT_TEAM_HISTORY_LIMIT,
 ) -> WalkForwardReport:
     """Execute chronological walk-forward evaluation over finished fixtures."""
+    config = model_config or ModelConfig()
     wp = weather_provider or create_weather_provider()
     all_fixtures = await provider.get_fixtures(limit=10_000)
     finished = sorted(
@@ -368,11 +369,15 @@ async def run_walkforward_backtest(
     base_results = await gather_team_results(
         provider,
         provisional_ids,
-        limit=team_history_limit,
+        limit=config.team_history_limit,
     )
     team_ids = collect_team_ids(all_fixtures, base_results)
     if team_ids != provisional_ids:
-        base_results = await gather_team_results(provider, team_ids, limit=team_history_limit)
+        base_results = await gather_team_results(
+            provider,
+            team_ids,
+            limit=config.team_history_limit,
+        )
 
     weather_by_match_id = {result.match_id: result for result in base_results}
 
@@ -385,8 +390,8 @@ async def run_walkforward_backtest(
             training,
             weather_by_match_id=weather_by_match_id,
             weather_provider=wp,
+            model_config=config,
             max_goals=max_goals,
-            dixon_coles_rho=dixon_coles_rho,
         )
         rows.append(
             _evaluate_row(
@@ -508,7 +513,12 @@ async def _run_async(
         resolved = settings.model_copy(update={"use_mock_data": use_mock})
     provider = create_fixture_provider(resolved)
     weather_provider = create_weather_provider(resolved)
-    report = await run_walkforward_backtest(provider, weather_provider=weather_provider)
+    model_config = ModelConfig.from_settings(resolved)
+    report = await run_walkforward_backtest(
+        provider,
+        model_config=model_config,
+        weather_provider=weather_provider,
+    )
     write_reports(report, output_dir)
     return report
 

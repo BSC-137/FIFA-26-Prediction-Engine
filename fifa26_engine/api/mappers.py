@@ -85,6 +85,7 @@ def breakdown_to_prediction_response(
     *,
     as_of_utc: datetime,
     pitch_type: PitchType,
+    model_version: str = MODEL_VERSION,
 ) -> PredictionResponse:
     """Build a full ``PredictionResponse`` from a prediction breakdown."""
     return PredictionResponse(
@@ -100,7 +101,7 @@ def breakdown_to_prediction_response(
         pitch_type=pitch_type,
         adjustments_applied=breakdown.adjustments_applied,
         weather_explanations=breakdown.weather_labels,
-        model_version=MODEL_VERSION,
+        model_version=model_version,
         generated_at=datetime.now(timezone.utc),
         as_of_utc=as_of_utc,
     )

@@ -15,7 +15,7 @@ Model assumptions
 * ``α`` is a global home-advantage parameter, applied only at non-neutral venues.
 * Attack/defense ratings are mean-centred across teams for identifiability.
 * Teams with few observed matches are shrunk toward the league average (0 attack, 0 defense).
-* Unknown teams at prediction time use the league-average rating (no crash).
+* Unknown teams at prediction time use competition-average ratings from the training pool.
 
 Fitting uses penalised negative log-likelihood minimisation (L-BFGS-B).
 The public API is stable for downstream simulator and adjustment layers.
@@ -24,16 +24,21 @@ The public API is stable for downstream simulator and adjustment layers.
 from __future__ import annotations
 
 import math
-from typing import Any, TypedDict
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
 from scipy.optimize import minimize
 
 from fifa26_engine.data.provider import Fixture, MatchResult
 
+if TYPE_CHECKING:
+    from fifa26_engine.config.model_config import ModelConfig
+
 XG_MIN = 0.15
 XG_MAX = 3.8
 DEFAULT_SHRINKAGE_PRIOR_MATCHES = 8.0
+DEFAULT_INTERCEPT_PRIOR_GOALS = 1.35
 DEFAULT_HOME_ADVANTAGE = 0.22
 NEUTRAL_COMPETITION_KEYWORDS = ("world cup", "euro", "copa america", "nations league finals")
 
@@ -74,27 +79,48 @@ def infer_fixture_is_neutral(fixture: Fixture) -> bool:
     return any(keyword in competition for keyword in NEUTRAL_COMPETITION_KEYWORDS)
 
 
+def _ensure_aware(moment: datetime) -> datetime:
+    if moment.tzinfo is None:
+        return moment.replace(tzinfo=timezone.utc)
+    return moment.astimezone(timezone.utc)
+
+
 class TeamStrengthModel:
     """Poisson attack/defense ratings with home advantage and shrinkage."""
 
     def __init__(
         self,
         shrinkage_prior_matches: float = DEFAULT_SHRINKAGE_PRIOR_MATCHES,
+        intercept_prior_goals: float = DEFAULT_INTERCEPT_PRIOR_GOALS,
+        time_decay_half_life_days: float = 0.0,
         xg_min: float = XG_MIN,
         xg_max: float = XG_MAX,
     ) -> None:
         """Initialise an unfitted model."""
         self._shrinkage_prior = max(0.0, shrinkage_prior_matches)
+        self._intercept_prior_goals = max(0.01, intercept_prior_goals)
+        self._time_decay_half_life = max(0.0, time_decay_half_life_days)
         self._xg_min = xg_min
         self._xg_max = xg_max
-        self._intercept: float = math.log(1.35)
+        self._intercept: float = math.log(self._intercept_prior_goals)
         self._home_advantage: float = DEFAULT_HOME_ADVANTAGE
         self._teams: list[str] = []
         self._team_index: dict[str, int] = {}
         self._raw_attack: np.ndarray = np.array([])
         self._raw_defense: np.ndarray = np.array([])
         self._team_params: dict[str, TeamParams] = {}
+        self._fallback_attack: float = 0.0
+        self._fallback_defense: float = 0.0
         self._is_fitted = False
+
+    @classmethod
+    def from_config(cls, model_config: ModelConfig) -> TeamStrengthModel:
+        """Create an unfitted model from ``ModelConfig``."""
+        return cls(
+            shrinkage_prior_matches=model_config.shrinkage_prior_matches,
+            intercept_prior_goals=model_config.intercept_prior_goals,
+            time_decay_half_life_days=model_config.time_decay_half_life_days,
+        )
 
     @property
     def is_fitted(self) -> bool:
@@ -117,9 +143,16 @@ class TeamStrengthModel:
         return dict(self._team_params)
 
     @staticmethod
-    def from_results(results: list[MatchResult]) -> TeamStrengthModel:
+    def from_results(
+        results: list[MatchResult],
+        *,
+        model_config: ModelConfig | None = None,
+    ) -> TeamStrengthModel:
         """Convenience constructor: create and fit a model in one step."""
-        model = TeamStrengthModel()
+        if model_config is not None:
+            model = TeamStrengthModel.from_config(model_config)
+        else:
+            model = TeamStrengthModel()
         model.fit(results)
         return model
 
@@ -143,6 +176,7 @@ class TeamStrengthModel:
         home_goals = np.array([match.home_goals for match in results], dtype=float)
         away_goals = np.array([match.away_goals for match in results], dtype=float)
         is_neutral = np.array([match.is_neutral for match in results], dtype=bool)
+        match_weights = self._compute_match_weights(results)
 
         initial = self._initial_parameters(n_teams, home_goals, away_goals)
         bounds = self._parameter_bounds(n_teams)
@@ -156,6 +190,7 @@ class TeamStrengthModel:
                 away_goals,
                 is_neutral,
                 n_teams,
+                match_weights,
             )
 
         result = minimize(
@@ -168,13 +203,18 @@ class TeamStrengthModel:
 
         self._unpack_parameters(result.x, n_teams)
         self._apply_shrinkage(matches_played)
+        self._compute_fallback_params()
         self._is_fitted = True
 
     def get_team_params(self, team_id: str) -> TeamParams:
-        """Return shrunk parameters for a team, or league average if unknown."""
+        """Return shrunk parameters for a team, or competition average if unknown."""
         if team_id in self._team_params:
             return self._team_params[team_id]
-        return TeamParams(attack=0.0, defense=0.0, matches_played=0)
+        return TeamParams(
+            attack=self._fallback_attack,
+            defense=self._fallback_defense,
+            matches_played=0,
+        )
 
     def expected_goals(
         self,
@@ -226,9 +266,40 @@ class TeamStrengthModel:
         self._raw_attack = np.array([])
         self._raw_defense = np.array([])
         self._team_params = {}
-        self._intercept = math.log(1.35)
+        self._fallback_attack = 0.0
+        self._fallback_defense = 0.0
+        self._intercept = math.log(self._intercept_prior_goals)
         self._home_advantage = DEFAULT_HOME_ADVANTAGE
         self._is_fitted = False
+
+    def _compute_match_weights(self, results: list[MatchResult]) -> np.ndarray:
+        """Exponential time-decay weights (uniform when half-life is zero)."""
+        if self._time_decay_half_life <= 0.0:
+            return np.ones(len(results), dtype=float)
+
+        reference = max(_ensure_aware(match.date) for match in results)
+        ages_days = np.array(
+            [
+                max(0.0, (reference - _ensure_aware(match.date)).total_seconds() / 86_400.0)
+                for match in results
+            ],
+            dtype=float,
+        )
+        return np.exp(-ages_days / self._time_decay_half_life)
+
+    def _compute_fallback_params(self) -> None:
+        """Competition-average ratings for teams absent from the training pool."""
+        known = [
+            params
+            for params in self._team_params.values()
+            if params["matches_played"] > 0
+        ]
+        if not known:
+            self._fallback_attack = 0.0
+            self._fallback_defense = 0.0
+            return
+        self._fallback_attack = float(np.mean([params["attack"] for params in known]))
+        self._fallback_defense = float(np.mean([params["defense"] for params in known]))
 
     @staticmethod
     def _collect_teams(results: list[MatchResult]) -> tuple[list[str], dict[str, int]]:
@@ -270,6 +341,7 @@ class TeamStrengthModel:
         away_goals: np.ndarray,
         is_neutral: np.ndarray,
         n_teams: int,
+        match_weights: np.ndarray,
     ) -> float:
         intercept = params[0]
         home_adv = params[1]
@@ -288,7 +360,8 @@ class TeamStrengthModel:
         # Stable Poisson NLL: λ - g*log(λ) with λ = exp(log_λ)
         home_nll = np.exp(home_log_rate) - home_goals * home_log_rate
         away_nll = np.exp(away_log_rate) - away_goals * away_log_rate
-        nll = float(np.sum(home_nll + away_nll))
+        per_match_nll = home_nll + away_nll
+        nll = float(np.sum(per_match_nll * match_weights))
 
         # Soft identifiability constraints (mean-zero attack/defense).
         nll += 50.0 * float(attacks.mean() ** 2 + defenses.mean() ** 2)

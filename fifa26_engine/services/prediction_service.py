@@ -10,7 +10,7 @@ from fifa26_engine.api.schemas import (
     MatchPredictionResponse,
     PredictionProbabilities,
 )
-from fifa26_engine.config import Settings, get_settings
+from fifa26_engine.config import ModelConfig, Settings, get_settings
 from fifa26_engine.data.api_football import ApiFootballProvider
 from fifa26_engine.data.context_builder import build_match_context
 from fifa26_engine.data.mock_provider import MockFixtureProvider
@@ -26,7 +26,8 @@ from fifa26_engine.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-DEFAULT_TEAM_HISTORY_LIMIT = 30
+DEFAULT_MAX_GOALS = 10
+DEFAULT_TEAM_HISTORY_LIMIT = ModelConfig().team_history_limit
 
 
 def create_fixture_provider(settings: Settings | None = None) -> FixtureProvider:
@@ -61,9 +62,8 @@ async def predict_fixture_markets(
     fixture: Fixture,
     provider: FixtureProvider,
     *,
-    team_history_limit: int = DEFAULT_TEAM_HISTORY_LIMIT,
-    max_goals: int = 10,
-    dixon_coles_rho: float = -0.13,
+    model_config: ModelConfig | None = None,
+    max_goals: int = DEFAULT_MAX_GOALS,
     as_of_utc: datetime | None = None,
     weather_provider: WeatherProvider | None = None,
 ) -> PredictionBreakdown:
@@ -71,20 +71,21 @@ async def predict_fixture_markets(
 
     Pipeline: base xG → weather affinity → AdjustmentEngine → MatchSimulator.
     """
+    config = model_config or ModelConfig()
     enriched = enrich_fixture(fixture)
     results = await load_recent_results_for_fixture(
         enriched,
         provider,
-        limit=team_history_limit,
+        limit=config.team_history_limit,
         as_of_utc=as_of_utc,
     )
 
-    strength_model = TeamStrengthModel.from_results(results)
+    strength_model = TeamStrengthModel.from_results(results, model_config=config)
     xg_prediction = strength_model.predict_fixture(enriched)
     base_home_xg = xg_prediction["home_xg"]
     base_away_xg = xg_prediction["away_xg"]
 
-    affinity_engine = WeatherAffinityEngine.from_results(results)
+    affinity_engine = WeatherAffinityEngine.from_results(results, model_config=config)
     context = await build_match_context(
         enriched,
         provider=provider,
@@ -109,7 +110,7 @@ async def predict_fixture_markets(
         home_xg=adjusted_home_xg,
         away_xg=adjusted_away_xg,
         max_goals=max_goals,
-        dixon_coles_rho=dixon_coles_rho,
+        dixon_coles_rho=config.dixon_coles_rho,
     )
     simulation = simulator.simulate()
 
@@ -149,23 +150,26 @@ class PredictionService:
         self,
         provider: FixtureProvider | None = None,
         settings: Settings | None = None,
-        team_history_limit: int = DEFAULT_TEAM_HISTORY_LIMIT,
-        max_goals: int = 10,
-        dixon_coles_rho: float = -0.13,
+        model_config: ModelConfig | None = None,
+        max_goals: int = DEFAULT_MAX_GOALS,
         weather_provider: WeatherProvider | None = None,
     ) -> None:
         """Initialize the service with an optional provider override."""
         self._settings = settings or get_settings()
+        self._model_config = model_config or ModelConfig.from_settings(self._settings)
         self._provider = provider or create_fixture_provider(self._settings)
-        self._team_history_limit = team_history_limit
         self._max_goals = max_goals
-        self._dixon_coles_rho = dixon_coles_rho
         self._weather_provider = weather_provider or create_weather_provider(self._settings)
 
     @property
     def provider(self) -> FixtureProvider:
         """Underlying fixture data provider."""
         return self._provider
+
+    @property
+    def model_config(self) -> ModelConfig:
+        """Active model hyperparameters."""
+        return self._model_config
 
     async def get_fixture(self, fixture_id: str) -> Fixture | None:
         """Return a fixture by ID from the configured provider."""
@@ -192,7 +196,7 @@ class PredictionService:
         as_of_utc: datetime | None = None,
     ) -> list[MatchResult]:
         """Load and temporally filter recent NT results for both teams."""
-        per_team_limit = limit if limit is not None else self._team_history_limit
+        per_team_limit = limit if limit is not None else self._model_config.team_history_limit
         prov = provider or self._provider
         results = await load_recent_results_for_fixture(
             fixture,
@@ -219,7 +223,7 @@ class PredictionService:
             provider=provider,
             as_of_utc=as_of_utc,
         )
-        model = TeamStrengthModel.from_results(results)
+        model = TeamStrengthModel.from_results(results, model_config=self._model_config)
         prediction = model.predict_fixture(enrich_fixture(fixture))
         logger.info(
             "Base xG for %s vs %s: %.2f - %.2f (neutral=%s)",
@@ -241,9 +245,8 @@ class PredictionService:
         return await predict_fixture_markets(
             fixture,
             provider or self._provider,
-            team_history_limit=self._team_history_limit,
+            model_config=self._model_config,
             max_goals=self._max_goals,
-            dixon_coles_rho=self._dixon_coles_rho,
             as_of_utc=as_of_utc,
             weather_provider=self._weather_provider,
         )

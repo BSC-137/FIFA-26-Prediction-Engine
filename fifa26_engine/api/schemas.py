@@ -7,10 +7,12 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from fifa26_engine.config.model_config import DEFAULT_MODEL_VERSION
+
 FixtureStatusSchema = Literal["scheduled", "live", "finished"]
 PitchTypeSchema = Literal["grass", "hybrid", "artificial", "unknown"]
 ProviderModeSchema = Literal["mock", "api"]
-MODEL_VERSION = "0.2.0"
+MODEL_VERSION = DEFAULT_MODEL_VERSION
 
 
 class FixtureResponse(BaseModel):
@@ -198,3 +200,16 @@ class AccuracyRecomputeResponse(BaseModel):
 
     summary: AccuracySummaryResponse
     evaluated_count: int
+
+
+class ModelInfoResponse(BaseModel):
+    """Active model hyperparameters for UI display."""
+
+    model_version: str
+    team_history_limit: int
+    shrinkage_prior_matches: float
+    dixon_coles_rho: float
+    weather_delta_scale: float
+    weather_min_bucket_samples: int
+    intercept_prior_goals: float
+    time_decay_half_life_days: float

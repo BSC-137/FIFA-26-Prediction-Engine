@@ -6,6 +6,9 @@ from typing import Literal
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from fifa26_engine.config.model_config import DEFAULT_DIXON_COLES_RHO, DEFAULT_MODEL_VERSION
+from fifa26_engine.config.paths import ENV_FILE
+
 # ---------------------------------------------------------------------------
 # Competition constants — update here when API-Football publishes the 2026 IDs.
 # See https://www.api-football.com/documentation-v3#tag/Leagues
@@ -19,10 +22,13 @@ class ConfigError(Exception):
 
 
 class Settings(BaseSettings):
-    """Runtime settings for the prediction engine."""
+    """Runtime settings for the prediction engine.
+
+    Loads ``project_root/.env`` regardless of the process working directory.
+    """
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -106,12 +112,60 @@ class Settings(BaseSettings):
         description="Optional key required for POST /accuracy/recompute (empty = allow in dev).",
     )
 
+    # Model hyperparameters (see ModelConfig)
+    team_history_limit: int = Field(
+        default=30,
+        ge=1,
+        le=500,
+        description="Max recent NT results per team used for fitting.",
+    )
+    shrinkage_prior_matches: float = Field(
+        default=8.0,
+        gt=0.0,
+        description="Pseudo-match count for team rating shrinkage toward average.",
+    )
+    dixon_coles_rho: float | None = Field(
+        default=None,
+        description=f"Dixon-Coles low-score correlation (default {DEFAULT_DIXON_COLES_RHO}).",
+    )
+    weather_delta_scale: float = Field(
+        default=0.35,
+        gt=0.0,
+        description="Scale factor for weather affinity xG modifiers.",
+    )
+    weather_min_bucket_samples: int = Field(
+        default=5,
+        ge=1,
+        description="Minimum bucket samples before full weather affinity weight.",
+    )
+    intercept_prior_goals: float = Field(
+        default=1.35,
+        gt=0.0,
+        description="Baseline goals rate when no training data is available.",
+    )
+    time_decay_half_life_days: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Exponential decay half-life for match weights (0 = disabled).",
+    )
+    model_version: str = Field(
+        default=DEFAULT_MODEL_VERSION,
+        description="Version tag stored in predictions and exposed via /model/info.",
+    )
+
     @field_validator("api_football_key", mode="before")
     @classmethod
     def strip_api_key(cls, value: object) -> str:
         if value is None:
             return ""
         return str(value).strip()
+
+    @field_validator("dixon_coles_rho", mode="before")
+    @classmethod
+    def empty_dixon_coles_rho(cls, value: object) -> float | None:
+        if value is None or value == "":
+            return None
+        return float(value)  # type: ignore[arg-type]
 
     @property
     def has_api_key(self) -> bool:
