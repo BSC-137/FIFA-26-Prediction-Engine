@@ -1,0 +1,247 @@
+{
+  "matchday": "2026-07-01",
+  "generated_at": "2026-07-01T03:47:16.109632+00:00",
+  "source": "openfootball",
+  "model_version": "1.0.0-rc1",
+  "count": 4,
+  "purpose": "pre_match_prediction_ledger",
+  "note": "Fill actual_* fields after matches finish to score model accuracy.",
+  "predictions": [
+    {
+      "fixture_id": "wc26-079",
+      "match": "Mexico vs Ecuador",
+      "kickoff_utc": "2026-07-01T01:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Estadio Azteca",
+      "venue_city": "Mexico City",
+      "pitch_type": "grass",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3827,
+      "probabilities": {
+        "home_win": 0.3734,
+        "draw": 0.3827,
+        "away_win": 0.2439,
+        "btts_yes": 0.3139,
+        "btts_no": 0.6861,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.15,
+        "strength_away": 0.15,
+        "base_home": 0.913,
+        "base_away": 0.687,
+        "adjusted_home": 0.913,
+        "adjusted_away": 0.687
+      },
+      "weather": {
+        "temperature_c": 17.2,
+        "humidity_pct": 76.0,
+        "wind_speed_kmh": 1.1,
+        "precipitation_mm": 0.1,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "host_nation_boost:0.12",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.2666,
+        "away_attack": 0.0634,
+        "home_defense": 0.8721,
+        "away_defense": 0.1754,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.12
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3734,
+        "regulation_draw": 0.3827,
+        "regulation_away_win": 0.2439,
+        "advance_home": 0.5802,
+        "advance_away": 0.4198
+      }
+    },
+    {
+      "fixture_id": "wc26-080",
+      "match": "England vs DR Congo",
+      "kickoff_utc": "2026-07-01T16:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Mercedes-Benz Stadium",
+      "venue_city": "Atlanta",
+      "pitch_type": "artificial",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3854,
+      "probabilities": {
+        "home_win": 0.3468,
+        "draw": 0.3854,
+        "away_win": 0.2679,
+        "btts_yes": 0.3178,
+        "btts_no": 0.6822,
+        "over_2_5": 0.2166,
+        "under_2_5": 0.7834
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.374,
+        "strength_away": 0.314,
+        "base_home": 0.869,
+        "base_away": 0.731,
+        "adjusted_home": 0.869,
+        "adjusted_away": 0.731
+      },
+      "weather": {
+        "temperature_c": 33.6,
+        "humidity_pct": 49.0,
+        "wind_speed_kmh": 4.7,
+        "precipitation_mm": 0.0,
+        "weather_code": "heat",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "tournament_scoring_floor_applied"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": -0.3549,
+        "away_attack": -0.4553,
+        "home_defense": 0.599,
+        "away_defense": 0.5248,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3468,
+        "regulation_draw": 0.3854,
+        "regulation_away_win": 0.2679,
+        "advance_home": 0.549,
+        "advance_away": 0.451
+      }
+    },
+    {
+      "fixture_id": "wc26-082",
+      "match": "Belgium vs Senegal",
+      "kickoff_utc": "2026-07-01T20:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Lumen Field",
+      "venue_city": "Seattle",
+      "pitch_type": "artificial",
+      "model_pick": "draw",
+      "model_pick_prob": 0.3612,
+      "probabilities": {
+        "home_win": 0.3339,
+        "draw": 0.3612,
+        "away_win": 0.3049,
+        "btts_yes": 0.3744,
+        "btts_no": 0.6256,
+        "over_2_5": 0.2751,
+        "under_2_5": 0.7249
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 0.586,
+        "strength_away": 0.62,
+        "base_home": 0.937,
+        "base_away": 0.884,
+        "adjusted_home": 0.937,
+        "adjusted_away": 0.884
+      },
+      "weather": {
+        "temperature_c": 17.8,
+        "humidity_pct": 63.0,
+        "wind_speed_kmh": 10.9,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": -0.6237,
+        "away_attack": -0.4964,
+        "home_defense": 0.8721,
+        "away_defense": 0.8005,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.0
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.3339,
+        "regulation_draw": 0.3612,
+        "regulation_away_win": 0.3049,
+        "advance_home": 0.5177,
+        "advance_away": 0.4823
+      }
+    },
+    {
+      "fixture_id": "wc26-081",
+      "match": "USA vs Bosnia & Herzegovina",
+      "kickoff_utc": "2026-07-02T00:00:00+00:00",
+      "stage": "Round of 32",
+      "venue": "Levi's Stadium",
+      "venue_city": "Santa Clara",
+      "pitch_type": "grass",
+      "model_pick": "home",
+      "model_pick_prob": 0.6322,
+      "probabilities": {
+        "home_win": 0.6322,
+        "draw": 0.2162,
+        "away_win": 0.1516,
+        "btts_yes": 0.5826,
+        "btts_no": 0.4174,
+        "over_2_5": 0.6285,
+        "under_2_5": 0.3715
+      },
+      "prob_sum": 1.0,
+      "expected_goals": {
+        "strength_home": 1.958,
+        "strength_away": 0.751,
+        "base_home": 2.216,
+        "base_away": 1.024,
+        "adjusted_home": 2.216,
+        "adjusted_away": 1.024
+      },
+      "weather": {
+        "temperature_c": 23.8,
+        "humidity_pct": 46.0,
+        "wind_speed_kmh": 20.1,
+        "precipitation_mm": 0.0,
+        "weather_code": "clear",
+        "is_indoor": false
+      },
+      "adjustments": [
+        "elo_blend:0.25",
+        "host_nation_boost:0.12"
+      ],
+      "warnings": [],
+      "diagnostics": {
+        "home_attack": 0.0676,
+        "away_attack": -0.0784,
+        "home_defense": 0.6428,
+        "away_defense": -0.1697,
+        "n_training_matches": 6,
+        "home_wc_matches": 3,
+        "away_wc_matches": 3,
+        "host_boost_applied": 0.12
+      },
+      "knockout_markets": {
+        "regulation_home_win": 0.6322,
+        "regulation_draw": 0.2162,
+        "regulation_away_win": 0.1516,
+        "advance_home": 0.7732,
+        "advance_away": 0.2268
+      }
+    }
+  ]
+}
