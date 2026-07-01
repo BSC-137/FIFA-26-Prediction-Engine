@@ -1,336 +1,415 @@
 # FIFA 26 Prediction Engine
 
-A modular Python engine for predicting FIFA World Cup 2026 match outcomes. The project is structured for production use: configurable data providers, caching, typed schemas, and a FastAPI surface (placeholder) for serving predictions.
+A modular Python engine for predicting FIFA World Cup 2026 match outcomes — with a weather-aware Poisson model, leakage-safe backtesting, a prediction ledger, and a **Prediction Pitch** web UI that turns forecasts into an easy-to-read football field.
 
-## Features
+This is a passion-project stack built for transparency: every probability can be traced back through xG layers, adjustments, and simulation — not a black-box ML model.
 
-- **Data providers** — abstract `FixtureProvider` with **openfootball WC 2026 JSON** (default, free), API-Football (optional), and offline mock
-- **Strength model** — Poisson attack/defense ratings with home advantage and shrinkage
-- **Simulator** — vectorized Dixon–Coles score matrix and market aggregation
-- **Weather & pitch model** — team affinity modifiers from historical conditions (see below)
-- **Structured adjustments** — injuries, rest, knockout context (explainable, no NLP)
-- **Configuration** — environment-driven settings via `pydantic-settings`
+---
 
-## Weather & Pitch Model
+## What makes this different
 
-The engine's distinctive layer learns how national teams perform under specific **temperature**, **precipitation**, and **pitch surface** profiles from historical `MatchResult` data. At prediction time:
+Most football predictors stop at “team A vs team B” strength ratings. This engine adds layers that matter specifically for a **summer World Cup across North America**:
 
-1. Stadium coordinates are resolved from the WC 2026 venue map (`data/stadiums.py`)
-2. Kickoff weather is fetched via Open-Meteo (or deterministic mock offline)
-3. `WeatherAffinityEngine` applies small transparent xG multipliers (±6%)
-4. `AdjustmentEngine` layers rest, injury, and knockout factors (±8% total cap)
+| Layer | What it does | Why it matters |
+|-------|----------------|----------------|
+| **Tournament-only training** | Team history comes from WC 2026 matches in the openfootball feed (not stale club form) | Ratings reflect how teams are playing *in this tournament* |
+| **Weather & pitch affinity** | Small xG modifiers from historical performance in heat, rain, grass vs artificial | Dallas heat ≠ Seattle cool; surface type affects tempo |
+| **Stadium-aware forecasts** | Venue coordinates → Open-Meteo kickoff weather | Conditions are part of the prediction, not an afterthought |
+| **Calibration for low xG** | Elo blend, host-nation boost, tournament scoring floor, knockout floor | Prevents “everything is a 70% draw” when ratings are sparse early on |
+| **Dixon–Coles simulation** | Full scoreline matrix → 1X2, BTTS, O/U, top scores | One coherent model drives all markets |
+| **Knockout markets** | Regulation 1X2 + **to advance** (ET + pens) | Knockout semantics live in `knockout.py`, not hidden xG deflation |
+| **Leakage-safe evaluation** | Walk-forward backtests + SQLite ledger with `as_of_utc ≤ kickoff` | You can trust accuracy numbers — future results never train the past |
 
-Set `WEATHER_PROVIDER=openmeteo` in `.env` for live forecasts (no API key required).
+There is **no bookmaker odds calibration** yet (would need an external odds feed). Injury counts are stubbed at zero until squad data is wired in.
+
+---
+
+## Model architecture
+
+Predictions flow through a fixed pipeline. Each step is inspectable in the API response and the Pitch UI.
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────────┐
+│  Fixture data   │────▶│  TeamStrength    │────▶│  Calibration        │
+│  (openfootball) │     │  Poisson atk/def │     │  Elo, host, floors  │
+└─────────────────┘     └──────────────────┘     └──────────┬──────────┘
+                                                            │
+┌─────────────────┐     ┌──────────────────┐               ▼
+│  Open-Meteo     │────▶│  WeatherAffinity │────▶┌─────────────────────┐
+│  kickoff wx     │     │  ±6% xG buckets  │     │  AdjustmentEngine   │
+└─────────────────┘     └──────────────────┘     │  rest, wx, caps     │
+                                                  └──────────┬──────────┘
+                                                             │
+                         ┌──────────────────┐               ▼
+                         │  KnockoutMarkets │◀──┌─────────────────────┐
+                         │  advance_home/away│   │  Dixon–Coles sim    │
+                         └──────────────────┘   │  1X2 BTTS O/U scores│
+                                                └─────────────────────┘
+```
+
+### 1. Team strength (`strength.py`)
+
+Fits **attack** and **defense** ratings from historical `MatchResult` rows using Poisson negative log-likelihood (L-BFGS-B).
+
+- World Cup fixtures are treated as **neutral** (no home advantage in the log-rate).
+- **Shrinkage** pulls sparse teams toward the tournament average; teams with &lt;2 WC matches get stronger shrinkage.
+- **Time decay** (21-day half-life by default) weights recent group-stage form more heavily going into knockouts.
+
+Output: raw **strength xG** for home and away.
+
+### 2. Calibration (`calibration.py`)
+
+Post-strength adjustments for WC 2026 realities:
+
+| Step | Effect |
+|------|--------|
+| **Elo blend** (25%) | Blends Poisson xG with Elo-implied xG from chronological results |
+| **Host nation boost** (+0.12 log-rate) | Mexico, USA, Canada when playing at home |
+| **Tournament scoring prior** (20%) | Nudges total xG toward observed WC 2026 scoring rate |
+| **Scoring floor** | Group: min **2.0** total xG; Knockout: min **2.4** total xG |
+
+Output: **base xG** (after calibration, before weather/context).
+
+### 3. Weather affinity (`weather_affinity.py`)
+
+Buckets historical matches by temperature, precipitation, and pitch type. Applies transparent multipliers (capped at ±6% per team) when kickoff weather matches a team’s profile.
+
+### 4. Context adjustments (`adjustments.py`, `context_builder.py`)
+
+- **Days rest** — computed from each team’s last tournament match before kickoff; short rest (&lt;4 days) slightly reduces xG, long rest (&gt;6 days) gives a small boost.
+- **Weather modifiers** — from step 3.
+- **Total adjustment cap** — combined context changes cannot move total xG more than ±8% from the calibrated base.
+
+Injuries are reserved for future squad data (currently 0).
+
+### 5. Simulation (`simulator.py`)
+
+Builds a scoreline probability matrix with **Dixon–Coles** low-score correlation:
+
+- **Group / general:** ρ = **-0.13** (default)
+- **Knockout:** ρ = **-0.08** (less draw mass when stakes are higher)
+
+From the matrix we derive:
+
+- 1X2 (home / draw / away)
+- BTTS yes/no
+- Over/under 1.5, 2.5, 3.5
+- Top exact scorelines
+
+### 6. Knockout markets (`knockout.py`)
+
+For Round of 32 and beyond:
+
+- **Regulation 1X2** — same as the main simulation.
+- **To advance** — models extra time (30 min at boosted xG) plus a logistic penalty shootout edge from relative strength.
+
+---
+
+## Prediction Pitch UI
+
+The web UI (`frontend/`) connects to the FastAPI backend and visualises one match at a time.
+
+### Running the UI
+
+**Option A — API + dev UI (hot reload):**
+
+```powershell
+# Terminal 1 — start API first; wait for "Uvicorn running"
+.\scripts\run_api.ps1
+
+# Terminal 2
+.\scripts\run_ui.ps1
+```
+
+Open **http://localhost:5173**
+
+**Option B — single server (production build):**
+
+```powershell
+cd frontend
+npm install
+npm run build
+cd ..
+.\scripts\run_api.ps1
+```
+
+Open **http://localhost:8000**
+
+### Reading the screen
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  FIFA 26 Prediction Pitch          [Sync data]  [API docs]               │
+├──────────────┬───────────────────────────────────────┬───────────────────┤
+│  MATCHES     │           FOOTBALL PITCH              │  MARKETS          │
+│  (filters)   │                                       │  (detail panel)   │
+│              │   [Home team]    Draw    [Away team]  │                   │
+│  scheduled   │      xG bubble   %       xG bubble    │  1X2 bars         │
+│  live        │                                       │  xG pipeline      │
+│  finished    │   arcs = win strength                │  O/U, BTTS        │
+│              │   total xG bar at bottom              │  top scorelines   │
+├──────────────┴───────────────────────────────────────┴───────────────────┤
+│  LEDGER ACCURACY — 1X2 / O/U 2.5 / BTTS / goal MAE (from stored preds)   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Left panel — Matches
+
+- **Filters:** `all`, `scheduled`, `live`, `finished`
+- **Status chips:** colour-coded match state
+- Click a match to load its prediction on the pitch
+
+#### Centre — The pitch
+
+| Visual | Meaning |
+|--------|---------|
+| **Team name + circle** | Home (left, blue) and away (right, orange) |
+| **Large number in circle** | **Adjusted expected goals (xG)** for that team |
+| **% under the circle** | **Win probability** (home or away) |
+| **Centre circle “Draw”** | Draw probability |
+| **Coloured arcs on each half** | Thicker arc = higher win chance on that side |
+| **Bottom bar “Total xG”** | Sum of adjusted home + away xG |
+| **Model pick (top right)** | Highest of home / draw / away with its probability |
+| **Stage pill + venue** | Competition round and stadium |
+
+The pitch is a summary view. Exact probabilities and secondary markets are in the right panel.
+
+#### Right panel — Markets
+
+| Section | What you see |
+|---------|----------------|
+| **1X2 Outcome** | Bar chart for home / draw / away |
+| **Expected goals pipeline** | Strength → Base → **Adjusted** xG (the number used in simulation) |
+| **Goal markets** | Over/under 2.5 and BTTS yes/no |
+| **Knockout — to advance** | Probability each team wins the tie (incl. ET/pens) |
+| **Most likely scorelines** | e.g. `1-0` at 12% |
+| **Kickoff conditions** | Temperature, humidity, wind, weather code |
+| **Model diagnostics** | Attack/defense ratings, WC matches played, training pool size |
+| **Warnings** | e.g. `low_total_xg`, `high_draw_probability`, `sparse_wc_history` |
+| **Adjustments** | Tags like `elo_blend:0.25`, `host_nation_boost:0.12` |
+
+#### Bottom — Ledger accuracy
+
+After upcoming fixtures are synced, the engine stores **pre-kickoff** predictions in `predictions.db`. When matches finish, this bar shows how those frozen forecasts performed:
+
+- **1X2** hit rate
+- **O/U 2.5** hit rate
+- **BTTS** hit rate
+- **Goal MAE** — average |predicted total xG − actual goals|
+
+Empty until you have stored predictions and finished results.
+
+---
 
 ## Requirements
 
-- Python 3.11+
+- **Python 3.11+**
+- **Node.js 18+** (only for the Pitch UI dev server / build)
+
+---
 
 ## Setup
 
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/BSC-137/FIFA-26-Prediction-Engine.git
-   cd FIFA-26-Prediction-Engine
-   ```
-
-2. **Create and activate a virtual environment**
-
-   ```bash
-   python -m venv venv
-
-   # Windows
-   venv\Scripts\activate
-
-   # macOS / Linux
-   source venv/bin/activate
-   ```
-
-3. **Install dependencies**
-
-   ```bash
-   pip install -e .
-   # or
-   pip install -r requirements.txt
-   ```
-
-4. **Configure environment**
-
-   Local secrets live in **`project_root/.env`** (same folder as `pyproject.toml`). This file is **gitignored** — never commit it.
-
-   Create it from the template:
-
-   ```bash
-   # Windows
-   .\scripts\setup_env.ps1
-
-   # macOS / Linux
-   chmod +x scripts/setup_env.sh && ./scripts/setup_env.sh
-   ```
-
-   Or copy manually:
-
-   ```bash
-   cp .env.example .env        # macOS / Linux
-   copy .env.example .env      # Windows
-   ```
-
-   Edit `.env` if needed. **No API key is required** for the default WC 2026 data source:
-
-   ```env
-   DATA_PROVIDER=openfootball
-   WEATHER_PROVIDER=openmeteo
-   ```
-
-   Optional: set `API_FOOTBALL_KEY` only if you switch to `DATA_PROVIDER=api-football`.
-
-   Settings load from `project_root/.env` automatically, even when uvicorn is started from another working directory.
-
-   **Verify configuration** after `.\scripts\run_api.ps1` or `./scripts/run_api.sh`:
-
-   | Endpoint | Expected (default) |
-   |----------|---------------------|
-   | `GET /health` | `"source": "openfootball"` |
-   | `GET /status` | `"provider_mode": "openfootball"` |
-
-   Use `USE_MOCK_DATA=true` or `DATA_PROVIDER=mock` for offline sample data.
-
-   **Sync latest WC 2026 results** (downloads from [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json)):
-
-   ```bash
-   python -m fifa26_engine.scripts.sync_wc2026_data
-   ```
-
-   **Per-team tournament stats** (played, W/D/L, goals, form — WC 2026 only):
-
-   ```bash
-   python -m fifa26_engine.scripts.wc2026_team_stats
-   python -m fifa26_engine.scripts.wc2026_team_stats --sync --team mexico
-   ```
-
-   **Regenerate upcoming predictions** (after model or data changes):
-
-   ```bash
-   python -m fifa26_engine.scripts.sync_wc2026_data
-   python scripts/predict_upcoming.py --sync --all
-   ```
-
-   France/Mexico knockout fixtures should show draw probabilities well below 60% with model `1.0.0-rc1`.
-
-## Lock-down checklist
-
-Before hyperparameter tuning or UI integration, confirm provider configuration end-to-end:
-
-1. **Validate live data** — after configuring `.env`, run:
-
-   ```bash
-   # Windows
-   .\scripts\validate_live.ps1
-
-   # macOS / Linux
-   chmod +x scripts/validate_live.sh && ./scripts/validate_live.sh
-   ```
-
-   Offline smoke test (no API key):
-
-   ```bash
-   python -m fifa26_engine.scripts.validate_live --mock
-   ```
-
-   Write machine-readable results to `reports/validate_live.json`:
-
-   ```bash
-   .\scripts\validate_live.ps1 --json
-   ```
-
-   Exit code `0` means all critical checks passed (warnings are allowed). The script never prints `API_FOOTBALL_KEY`.
-
-2. **Start the API** and confirm startup logs show `provider_mode`, `api_key_configured`, `weather_provider`, and `model_version`.
-
-3. **Hit `/health` and `/status`** — default mode should report `openfootball`.
-
-## Running the API
-
-Start the server with the helper script or uvicorn directly:
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/BSC-137/FIFA-26-Prediction-Engine.git
+cd FIFA-26-Prediction-Engine
+python -m venv venv
+```
+
+```powershell
 # Windows
-.\scripts\run_api.ps1
+venv\Scripts\activate
+pip install -e .
+```
 
+```bash
 # macOS / Linux
-chmod +x scripts/run_api.sh && ./scripts/run_api.sh
-
-# Or manually
-uvicorn fifa26_engine.api.main:app --reload --host 0.0.0.0 --port 8000
+source venv/bin/activate
+pip install -e .
 ```
 
-Open [http://localhost:8000/docs](http://localhost:8000/docs) for interactive API documentation.
+### 2. Configure `.env`
 
-### Endpoints
+Copy the template (never commit `.env`):
+
+```powershell
+copy .env.example .env      # Windows
+cp .env.example .env       # macOS / Linux
+```
+
+**Recommended defaults (no API key required):**
+
+```env
+DATA_PROVIDER=openfootball
+WEATHER_PROVIDER=openmeteo
+MODEL_VERSION=1.1.0
+```
+
+- Leave `USE_MOCK_DATA` **empty** or remove the line — empty means “not forced”.
+- Set `API_FOOTBALL_KEY` only if you switch to `DATA_PROVIDER=api-football`.
+
+### 3. Sync tournament data
+
+```bash
+python -m fifa26_engine.scripts.sync_wc2026_data
+```
+
+This downloads [openfootball/worldcup.json](https://github.com/openfootball/worldcup.json) into `data/wc2026/worldcup.json`.
+
+### 4. Verify
+
+```powershell
+.\scripts\run_api.ps1
+```
+
+In another terminal (PowerShell tip — avoid the `Invoke-WebRequest` prompt):
+
+```powershell
+curl.exe http://127.0.0.1:8000/health
+```
+
+Expected: `{"status":"ok","source":"openfootball"}`
+
+---
+
+## API
+
+Interactive docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/health` | Liveness check + data source (`openfootball`, `mock`, or `api-football`) |
-| `GET` | `/status` | Refresh timestamps, provider mode, fixture counts by status |
-| `GET` | `/teams/stats` | WC 2026 tournament stats per team (`?team_id=mexico` optional) |
-| `GET` | `/fixtures` | List fixtures (`?status=scheduled\|live\|finished`, `?limit=100`) |
-| `GET` | `/fixtures/refresh` | Bust fixture + prediction caches, return fresh list |
-| `GET` | `/predict/{fixture_id}` | Full prediction for a stored fixture |
-| `GET` | `/predict` | Manual matchup (`home_team_id`, `away_team_id`, `kickoff_utc`, …) |
-| `GET` | `/model/info` | Active model hyperparameters and version |
+| `GET` | `/health` | Liveness + data source |
+| `GET` | `/status` | Refresh timestamps, fixture counts, ledger size |
+| `GET` | `/model/info` | Active hyperparameters and `model_version` |
+| `GET` | `/teams/stats` | WC 2026 W/D/L, goals, form per team |
+| `GET` | `/fixtures` | List fixtures (`?status=scheduled\|live\|finished`) |
+| `GET` | `/fixtures/refresh` | Bust caches and reload data |
+| `GET` | `/predict/{fixture_id}` | Full prediction for one match |
+| `GET` | `/predict` | Manual matchup (query params for teams + kickoff) |
+| `GET` | `/accuracy/summary` | Ledger accuracy: 1X2, O/U, BTTS, MAE |
+| `GET` | `/accuracy/fixtures` | Per-match prediction vs actual |
+| `POST` | `/accuracy/recompute` | Refresh accuracy metrics |
 
-Responses are cached in-memory: **fixtures 5 min**, **predictions 10 min** (configurable via `.env`).
+Responses are cached in memory (fixtures ~5 min, predictions ~10 min). A background task refreshes data every 5 minutes by default.
 
-### Automatic refresh
+---
 
-A background asyncio task refreshes fixture caches every **5 minutes** by default (`REFRESH_INTERVAL_SECONDS=300`):
+## CLI tools & reports
 
-- Warms `scheduled`, `live`, and `finished` lists
-- Clears stale prediction caches when live scores may have changed
-- Never blocks API request handlers; failures are logged and exposed via `GET /status`
+| Command | Output | Purpose |
+|---------|--------|---------|
+| `python scripts/predict_upcoming.py --sync --all` | `reports/upcoming_predictions.json` | Batch forecast for all scheduled fixtures |
+| `python -m fifa26_engine.scripts.backtest_walkforward` | `reports/backtest_walkforward.md` | Full-tournament walk-forward backtest |
+| `python -m fifa26_engine.scripts.wc2026_team_stats` | `reports/wc2026_team_stats.json` | Tournament table stats |
+| `python -m fifa26_engine.scripts.tune_hyperparams` | `reports/tuning_results.json` | Grid search over core hyperparameters |
 
-Disable with `REFRESH_ENABLED=false` in `.env`.
+**Pre-match comparison ledgers** (fill in actual results after matches):
 
-### Sample prediction response
+- `reports/predictions_2026-07-01.md` — human-readable matchday sheet
+- `reports/predictions_2026-07-01.json` — same data for scripting
 
-```json
-{
-  "fixture": {
-    "fixture_id": "wc26-005",
-    "home_team_name": "Brazil",
-    "away_team_name": "Serbia",
-    "status": "scheduled",
-    "venue": "SoFi Stadium",
-    "pitch_type": "grass"
-  },
-  "expected_goals": {
-    "base_home": 1.42,
-    "base_away": 0.98,
-    "adjusted_home": 1.45,
-    "adjusted_away": 0.96
-  },
-  "probabilities": {
-    "home_win": 0.48,
-    "draw": 0.27,
-    "away_win": 0.25,
-    "btts_yes": 0.52,
-    "btts_no": 0.48,
-    "over_under": { "over_2_5": 0.44, "under_2_5": 0.56 },
-    "top_scores": [{ "score": "1-0", "probability": 0.12 }]
-  },
-  "weather": {
-    "temperature_c": 28.0,
-    "weather_code": "heat"
-  },
-  "pitch_type": "grass",
-  "adjustments_applied": [],
-  "weather_explanations": ["home_affinity:hot_dry_grass"],
-  "model_version": "0.2.0",
-  "generated_at": "2026-06-29T12:00:00Z",
-  "as_of_utc": "2026-06-13T19:00:00Z"
-}
-```
+**Walk-forward backtest** (last N knockouts example):
 
-Finished fixtures include actual `home_goals` / `away_goals` in the `fixture` block alongside the model prediction.
+- `reports/backtest_last5_walkforward.md`
 
-### Refresh behavior
+---
 
-`GET /fixtures/refresh` manually triggers the same refresh cycle as the background task:
+## Evaluation methodology
 
-1. API-level fixture list cache cleared
-2. API-level prediction cache cleared
-3. Underlying provider cache cleared (when using API-Football)
-4. Fresh data loaded for all status buckets
+### Walk-forward backtest
 
-Check `GET /status` for `last_fixture_refresh_utc`, `fixture_counts`, `ledger_prediction_count`, and any `last_refresh_error`.
+For each finished fixture, in chronological order:
 
-## Model Evaluation
+1. **`as_of = kickoff_utc`**
+2. **Training pool** = all matches with `date < as_of` (strict — the target match is never included)
+3. Full pipeline runs: strength → calibration → weather → adjustments → simulation
+4. Predictions compared to actual 1X2, O/U 2.5, BTTS, and goal xG
 
-Walk-forward backtesting retrains the model on every finished fixture in chronological order with strict temporal guards:
-
-1. **`as_of = kickoff_utc`** for the target fixture
-2. **Training pool** — all `MatchResult` rows with `date < as_of` (via `filter_results_before`)
-3. **Context** — weather and pitch from kickoff-time information only; observed kickoff weather is used when present on a `MatchResult`
-4. **No ledger** — research backtests do not read or write `predictions.db`
-
-Run the CLI (mock data works offline):
+Research backtests **do not** read or write `predictions.db`.
 
 ```bash
-python -m fifa26_engine.scripts.backtest_walkforward --mock
+python -m fifa26_engine.scripts.backtest_walkforward
 ```
 
-Outputs land in `reports/backtest_walkforward.json` and `reports/backtest_walkforward.md` with 1X2 accuracy, Brier score, log loss, O/U 2.5 and BTTS hit rates, goal MAE, and stage breakdowns.
+### Prediction ledger
 
-**Limitation:** mock weather history may be synthetic; treat offline backtest weather as illustrative rather than observed stadium conditions.
+For live forecasting accountability:
 
-Tune core hyperparameters offline (grid search over `dixon_coles_rho`, `shrinkage_prior_matches`, `team_history_limit`):
+1. Before kickoff, `LedgerService` stores one row per fixture (`as_of_utc ≤ kickoff_utc`)
+2. Stored fields include 1X2, BTTS, over 2.5, xG, top scores
+3. After full-time, `/accuracy/*` compares **stored** predictions to results — never regenerates
 
-```bash
-python -m fifa26_engine.scripts.tune_hyperparams --mock
-```
+Ledger sync runs on background refresh and `GET /fixtures/refresh`.
 
-Results are written to `reports/tuning_results.json` ranked by walk-forward log loss.
+---
 
-## Hyperparameters
+## Hyperparameters (model `1.1.0`)
 
-Model settings live in `fifa26_engine/config/model_config.py` and are overridable via `.env`:
+All values are overridable in `.env`. Runtime values: `GET /model/info`.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `TEAM_HISTORY_LIMIT` | `30` | Max recent NT results per team used for fitting |
+| Variable | Default | Role |
+|----------|---------|------|
+| `MODEL_VERSION` | `1.1.0` | Tags predictions and ledger rows |
+| `TEAM_HISTORY_LIMIT` | `30` | Max tournament results per team in training pool |
 | `SHRINKAGE_PRIOR_MATCHES` | `8.0` | Pseudo-match count for rating shrinkage |
-| `DIXON_COLES_RHO` | `-0.13` | Low-score correlation in the simulator (empty = default) |
-| `WEATHER_DELTA_SCALE` | `0.35` | Scale for weather affinity xG modifiers |
-| `WEATHER_MIN_BUCKET_SAMPLES` | `5` | Min samples before full weather bucket weight |
-| `INTERCEPT_PRIOR_GOALS` | `1.35` | Baseline scoring rate when no training data |
-| `TIME_DECAY_HALF_LIFE_DAYS` | `0` | Exponential decay half-life for match weights (`0` = off) |
-| `MODEL_VERSION` | `0.2.0` | Version tag in ledger rows and API responses |
+| `INTERCEPT_PRIOR_GOALS` | `1.45` | Baseline scoring rate when data is thin |
+| `TIME_DECAY_HALF_LIFE_DAYS` | `21` | Recent matches weighted more (`0` = off) |
+| `DIXON_COLES_RHO` | `-0.13` | Low-score correlation (group stage) |
+| `KNOCKOUT_DIXON_COLES_RHO` | `-0.08` | Less draw inflation in knockouts |
+| `TOURNAMENT_MIN_TOTAL_XG` | `2.0` | Minimum total xG floor (group) |
+| `KNOCKOUT_MIN_TOTAL_XG` | `2.4` | Minimum total xG floor (knockout) |
+| `TOURNAMENT_SCORING_PRIOR_WEIGHT` | `0.20` | Blend toward observed WC scoring rate |
+| `ELO_BLEND_WEIGHT` | `0.25` | Elo xG blend weight |
+| `HOST_NATION_BOOST` | `0.12` | Log-rate boost for mexico / usa / canada |
+| `WEATHER_DELTA_SCALE` | `0.35` | Weather affinity modifier scale |
+| `WEATHER_MIN_BUCKET_SAMPLES` | `5` | Min samples before full weather weight |
 
-Inspect the active configuration at runtime:
+Adjustment-rule constants (rest penalties, ±8% cap) live in code and are not grid-searched.
 
-```
-GET /model/info
-```
-
-Adjustment-rule constants (injuries, rest, knockout caps) are **not** tuned by the grid-search script.
-
-## Accuracy & Leakage Policy
-
-The engine maintains a **prediction ledger** (`predictions.db`) of pre-kickoff forecasts:
-
-1. **Before kickoff** — `LedgerService` stores one canonical row per fixture (`as_of_utc <= kickoff_utc`)
-2. **Training cutoff** — strength model uses only matches with `result.date < as_of_utc`
-3. **After full-time** — accuracy evaluation reads **stored** predictions only; never refits including that match
-4. **Finished fixtures** — `sync_ledger` skips generation; `/accuracy/*` compares ledger vs actual scores
-
-### Accuracy endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/accuracy/summary` | 1X2 accuracy, Brier, log loss, goal MAE, calibration bins |
-| `GET` | `/accuracy/fixtures` | Per-finished-match prediction vs actual |
-| `POST` | `/accuracy/recompute` | Recompute metrics from ledger (optional `X-Admin-Key`) |
-
-Ledger sync runs automatically during background fixture refresh and on `GET /fixtures/refresh`.
+---
 
 ## Project layout
 
 ```
-fifa26_engine/
-  config/                # Settings and ModelConfig hyperparameters
-  data/                  # Fixture data providers
-  models/                # Prediction models (placeholders)
-  api/                   # FastAPI app and schemas
-  services/              # Business orchestration
-  utils/                 # Cache, logging
+FIFA26 Engine/
+├── fifa26_engine/
+│   ├── api/              # FastAPI app, schemas, serves built UI at /
+│   ├── config/           # Settings + ModelConfig
+│   ├── data/             # openfootball, API-Football, mock providers
+│   ├── models/           # strength, calibration, simulator, knockout, evaluation
+│   ├── services/         # prediction, ledger, refresh, accuracy
+│   ├── storage/          # SQLite prediction ledger
+│   └── scripts/          # backtest, sync, tune, validate
+├── frontend/             # Prediction Pitch UI (Vite + React)
+├── scripts/              # run_api, run_ui, predict_upcoming, setup_env
+├── data/wc2026/          # Cached openfootball JSON
+├── reports/              # Backtests, predictions, team stats
+└── predictions.db        # Pre-kickoff forecast ledger (gitignored)
 ```
 
-## Development notes
+---
 
-- Prediction pipeline: `strength → weather affinity → adjustments → simulator`
-- Historical results are filtered with `filter_results_before(kickoff)` to prevent leakage
-- Use type hints and docstrings when extending public APIs.
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| UI shows `ECONNREFUSED :8000` | Start `.\scripts\run_api.ps1` first; wait for “Uvicorn running” |
+| `use_mock_data` validation error | Pull latest code (empty `USE_MOCK_DATA=` is now allowed) or remove that line from `.env` |
+| PowerShell `curl` prompts for confirmation | Use `curl.exe http://127.0.0.1:8000/health` instead |
+| No matches in UI | Click **Sync data** or run `sync_wc2026_data`; check filter isn’t hiding fixtures |
+| Ledger accuracy empty | Needs finished matches with stored pre-kickoff predictions |
+
+---
+
+## Development
+
+- **Pipeline entry:** `fifa26_engine/services/prediction_service.py` → `predict_fixture_markets()`
+- **Leakage guard:** `fifa26_engine/models/temporal.py` → `filter_results_before()`
+- **Tests:** `pytest tests/`
+
+---
 
 ## License
 
