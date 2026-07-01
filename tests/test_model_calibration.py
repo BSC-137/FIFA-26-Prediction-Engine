@@ -108,7 +108,12 @@ def test_france_vs_weak_gets_realistic_xg_after_calibration() -> None:
 
 def test_mexico_host_boost_increases_home_xg() -> None:
     results = _build_france_dominant_pool()
-    config = ModelConfig(host_nation_boost=0.12, elo_blend_weight=0.0, tournament_min_total_xg=0.0)
+    config = ModelConfig(
+        host_nation_boost=0.12,
+        elo_blend_weight=0.0,
+        tournament_min_total_xg=0.0,
+        tournament_scoring_prior_weight=0.0,
+    )
     model = TeamStrengthModel.from_results(results, model_config=config)
     fixture = _fixture("mexico", "ecuador", "Mexico", "Ecuador", "Group A - Matchday 3")
     prediction = model.predict_fixture(fixture)
@@ -117,7 +122,12 @@ def test_mexico_host_boost_increases_home_xg() -> None:
         prediction,
         _fixture("mexico", "ecuador", "Mexico", "Ecuador", "Group A - Matchday 3"),
         results,
-        ModelConfig(host_nation_boost=0.0, elo_blend_weight=0.0, tournament_min_total_xg=0.0),
+        ModelConfig(
+            host_nation_boost=0.0,
+            elo_blend_weight=0.0,
+            tournament_min_total_xg=0.0,
+            tournament_scoring_prior_weight=0.0,
+        ),
     )
     host_home, host_away, labels, applied = calibrate_base_xg(prediction, fixture, results, config)
 
@@ -134,6 +144,18 @@ def test_knockout_advance_probs_sum_to_one() -> None:
         1.0,
         abs=1e-6,
     )
+
+
+def test_knockout_floor_raises_total_xg() -> None:
+    results = _build_france_dominant_pool()
+    config = ModelConfig(knockout_min_total_xg=2.4, tournament_min_total_xg=2.0, elo_blend_weight=0.0)
+    model = TeamStrengthModel.from_results(results, model_config=config)
+    fixture = _fixture("france", "sweden", "France", "Sweden", "Round of 32")
+    prediction = model.predict_fixture(fixture)
+    home_xg, away_xg, labels, _ = calibrate_base_xg(prediction, fixture, results, config)
+
+    assert home_xg + away_xg >= 2.4
+    assert "knockout_scoring_floor_applied" in labels
 
 
 def test_low_xg_floor_reduces_draw_inflation() -> None:

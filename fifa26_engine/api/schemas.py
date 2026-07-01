@@ -191,6 +191,8 @@ class AccuracySummaryResponse(BaseModel):
     brier_score: float
     log_loss: float
     mae_total_goals: float
+    ou_25_hit_rate: float = 0.0
+    btts_hit_rate: float = 0.0
     calibration_bins: list[CalibrationBinResponse]
     computed_at: datetime
     model_version: str
@@ -215,6 +217,12 @@ class AccuracyFixtureResponse(BaseModel):
     brier: float
     log_loss: float
     total_goals_error: float
+    predicted_over_2_5: bool = False
+    actual_over_2_5: bool = False
+    correct_ou_2_5: bool = False
+    predicted_btts_yes: bool = False
+    actual_btts_yes: bool = False
+    correct_btts: bool = False
 
 
 class AccuracyFixturesListResponse(BaseModel):
@@ -243,6 +251,9 @@ class ModelInfoResponse(BaseModel):
     intercept_prior_goals: float
     time_decay_half_life_days: float
     tournament_min_total_xg: float
+    knockout_min_total_xg: float
+    knockout_dixon_coles_rho: float
+    tournament_scoring_prior_weight: float
     elo_blend_weight: float
     host_nation_boost: float
 

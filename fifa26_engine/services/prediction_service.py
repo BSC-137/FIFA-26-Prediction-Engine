@@ -108,6 +108,8 @@ async def predict_fixture_markets(
         enriched,
         provider=provider,
         weather_provider=weather_provider or create_weather_provider(),
+        team_results=results,
+        as_of_utc=as_of_utc,
     )
     weather_modifiers = affinity_engine.compute_modifiers(
         enriched.home_team_id,
@@ -126,11 +128,14 @@ async def predict_fixture_markets(
 
     all_adjustments = [*calibration_labels, *adjustment_labels]
 
+    sim_rho = (
+        config.knockout_dixon_coles_rho if context.is_knockout else config.dixon_coles_rho
+    )
     simulator = MatchSimulator(
         home_xg=adjusted_home_xg,
         away_xg=adjusted_away_xg,
         max_goals=max_goals,
-        dixon_coles_rho=config.dixon_coles_rho,
+        dixon_coles_rho=sim_rho,
     )
     simulation = simulator.simulate()
 
@@ -140,7 +145,7 @@ async def predict_fixture_markets(
             adjusted_home_xg,
             adjusted_away_xg,
             max_goals=max_goals,
-            dixon_coles_rho=config.dixon_coles_rho,
+            dixon_coles_rho=config.knockout_dixon_coles_rho,
         )
 
     home_wc_matches = count_team_matches(results, enriched.home_team_id)

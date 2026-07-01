@@ -399,7 +399,9 @@ class TeamStrengthModel:
         for index, team_id in enumerate(self._teams):
             n = matches_played[team_id]
             prior = self._shrinkage_prior
-            if self._is_world_cup_pool and n >= 3:
+            if self._is_world_cup_pool and n < 2:
+                prior = self._shrinkage_prior * 1.5
+            elif self._is_world_cup_pool and n >= 3:
                 prior = self._shrinkage_prior * 0.7
             weight = n / (n + prior) if prior > 0 else 1.0
             self._team_params[team_id] = TeamParams(

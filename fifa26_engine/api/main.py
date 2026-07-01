@@ -5,8 +5,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal
 
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from fifa26_engine.api.accuracy_mappers import (
     evaluated_fixture_to_response,
@@ -111,6 +115,9 @@ async def model_info(
         intercept_prior_goals=config.intercept_prior_goals,
         time_decay_half_life_days=config.time_decay_half_life_days,
         tournament_min_total_xg=config.tournament_min_total_xg,
+        knockout_min_total_xg=config.knockout_min_total_xg,
+        knockout_dixon_coles_rho=config.knockout_dixon_coles_rho,
+        tournament_scoring_prior_weight=config.tournament_scoring_prior_weight,
         elo_blend_weight=config.elo_blend_weight,
         host_nation_boost=config.host_nation_boost,
     )
@@ -322,3 +329,23 @@ async def predict_manual_matchup(
         f"predict:manual:{home_team_id}:{away_team_id}:{kickoff_utc.isoformat()}:{venue}"
     )
     return await _predict_fixture(state, service, fixture, cache_key)
+
+
+_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    app.mount("/assets", StaticFiles(directory=_FRONTEND_DIST / "assets"), name="ui-assets")
+
+    @app.get("/")
+    async def serve_pitch_ui() -> FileResponse:
+        """Serve the built prediction pitch UI."""
+        return FileResponse(_FRONTEND_DIST / "index.html")
+
+    @app.get("/{full_path:path}")
+    async def serve_pitch_ui_spa(full_path: str) -> FileResponse:
+        """SPA fallback — API routes are registered above this catch-all."""
+        if full_path.startswith(("predict", "fixtures", "accuracy", "teams", "model", "health", "status", "docs", "openapi")):
+            raise HTTPException(status_code=404, detail="Not found")
+        candidate = _FRONTEND_DIST / full_path
+        if candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_FRONTEND_DIST / "index.html")

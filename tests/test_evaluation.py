@@ -35,6 +35,8 @@ def _record(
         p_home=p_home,
         p_draw=p_draw,
         p_away=p_away,
+        p_btts_yes=0.4,
+        p_over_2_5=0.55,
         top_score_json="[]",
         weather_json=None,
         adjustments_json="{}",
@@ -75,6 +77,8 @@ def test_evaluation_computes_metrics() -> None:
     assert 0.0 <= summary.brier_score <= 2.0
     assert summary.log_loss > 0.0
     assert summary.mae_total_goals >= 0.0
+    assert 0.0 <= summary.ou_25_hit_rate <= 1.0
+    assert 0.0 <= summary.btts_hit_rate <= 1.0
     assert len(evaluated) == 2
 
 

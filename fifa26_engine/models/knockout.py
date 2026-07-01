@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from fifa26_engine.models.simulator import MatchSimulator
 
 ET_DURATION_FACTOR = 30.0 / 90.0
 ET_XG_BOOST = 1.08
-PENALTY_EDGE_SCALE = 0.10
 
 
 @dataclass(frozen=True)
@@ -23,9 +23,11 @@ class KnockoutMarkets:
 
 
 def _penalty_home_win_prob(home_xg: float, away_xg: float) -> float:
+    """Logistic penalty edge from relative attacking strength."""
     total = max(home_xg + away_xg, 0.01)
-    edge = PENALTY_EDGE_SCALE * (home_xg - away_xg) / total
-    return max(0.35, min(0.65, 0.5 + edge))
+    normalized_edge = (home_xg - away_xg) / total
+    logit = 0.9 * normalized_edge
+    return max(0.32, min(0.68, 1.0 / (1.0 + math.exp(-logit))))
 
 
 def compute_knockout_markets(
@@ -33,7 +35,7 @@ def compute_knockout_markets(
     away_xg: float,
     *,
     max_goals: int = 10,
-    dixon_coles_rho: float = -0.13,
+    dixon_coles_rho: float = -0.08,
 ) -> KnockoutMarkets:
     """Derive regulation 1X2 and to-advance markets from adjusted xG."""
     regulation = MatchSimulator(

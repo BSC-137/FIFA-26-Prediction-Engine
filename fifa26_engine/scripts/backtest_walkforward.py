@@ -22,6 +22,8 @@ from fifa26_engine.data.provider import Fixture, FixtureProvider, MatchResult, W
 from fifa26_engine.data.stadiums import enrich_fixture, resolve_stadium
 from fifa26_engine.data.weather_provider import WeatherProvider, _bucket_weather_code, create_weather_provider
 from fifa26_engine.models.adjustments import AdjustmentEngine, MatchContext
+from fifa26_engine.models.calibration import calibrate_base_xg
+from fifa26_engine.data.context_builder import compute_days_rest
 from fifa26_engine.models.evaluation import _argmax_outcome, _brier, _log_loss, _outcome
 from fifa26_engine.models.simulator import MatchSimulator
 from fifa26_engine.models.strength import TeamStrengthModel
@@ -147,6 +149,7 @@ async def build_backtest_match_context(
     *,
     weather_by_match_id: dict[str, MatchResult],
     weather_provider: WeatherProvider,
+    training_results: list[MatchResult] | None = None,
 ) -> MatchContext:
     """Assemble match context using only kickoff-time information."""
     enriched = enrich_fixture(fixture)
@@ -158,10 +161,16 @@ async def build_backtest_match_context(
             stadium.lon,
             enriched.kickoff_utc,
         )
+    home_rest = away_rest = None
+    if training_results:
+        home_rest = compute_days_rest(enriched.home_team_id, enriched.kickoff_utc, training_results)
+        away_rest = compute_days_rest(enriched.away_team_id, enriched.kickoff_utc, training_results)
     return MatchContext(
         is_knockout=_is_knockout_stage(enriched.stage),
         weather=weather,
         pitch_type=stadium.pitch_type,
+        home_days_rest=home_rest,
+        away_days_rest=away_rest,
     )
 
 
@@ -179,14 +188,19 @@ async def walkforward_predict_fixture(
     enriched = enrich_fixture(fixture)
     strength_model = TeamStrengthModel.from_results(training_results, model_config=config)
     xg_prediction = strength_model.predict_fixture(enriched)
-    base_home_xg = xg_prediction["home_xg"]
-    base_away_xg = xg_prediction["away_xg"]
+    base_home_xg, base_away_xg, _, _ = calibrate_base_xg(
+        xg_prediction,
+        enriched,
+        training_results,
+        config,
+    )
 
     affinity_engine = WeatherAffinityEngine.from_results(training_results, model_config=config)
     context = await build_backtest_match_context(
         enriched,
         weather_by_match_id=weather_by_match_id,
         weather_provider=weather_provider,
+        training_results=training_results,
     )
     weather_modifiers = affinity_engine.compute_modifiers(
         enriched.home_team_id,
@@ -203,11 +217,12 @@ async def walkforward_predict_fixture(
         weather_modifiers=weather_modifiers,
     )
 
+    sim_rho = config.knockout_dixon_coles_rho if context.is_knockout else config.dixon_coles_rho
     simulation = MatchSimulator(
         home_xg=adjusted_home_xg,
         away_xg=adjusted_away_xg,
         max_goals=max_goals,
-        dixon_coles_rho=config.dixon_coles_rho,
+        dixon_coles_rho=sim_rho,
     ).simulate()
     markets = simulation.markets
 

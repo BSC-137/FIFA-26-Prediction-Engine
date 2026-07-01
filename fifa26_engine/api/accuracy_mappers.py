@@ -18,6 +18,8 @@ def summary_to_response(summary: EvaluationSummary) -> AccuracySummaryResponse:
         brier_score=summary.brier_score,
         log_loss=summary.log_loss,
         mae_total_goals=summary.mae_total_goals,
+        ou_25_hit_rate=summary.ou_25_hit_rate,
+        btts_hit_rate=summary.btts_hit_rate,
         calibration_bins=[
             CalibrationBinResponse(
                 bin_start=bin_row.bin_start,
@@ -51,6 +53,12 @@ def evaluated_fixture_to_response(item: EvaluatedFixture) -> AccuracyFixtureResp
         brier=item.brier,
         log_loss=item.log_loss,
         total_goals_error=item.total_goals_error,
+        predicted_over_2_5=item.predicted_over_2_5,
+        actual_over_2_5=item.actual_over_2_5,
+        correct_ou_2_5=item.correct_ou_2_5,
+        predicted_btts_yes=item.predicted_btts_yes,
+        actual_btts_yes=item.actual_btts_yes,
+        correct_btts=item.correct_btts,
     )
 
 

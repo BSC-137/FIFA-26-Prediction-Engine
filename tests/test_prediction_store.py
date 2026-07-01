@@ -27,6 +27,8 @@ def _record(fixture_id: str, as_of_day: int, kickoff_day: int) -> PredictionReco
         p_home=0.45,
         p_draw=0.28,
         p_away=0.27,
+        p_btts_yes=0.42,
+        p_over_2_5=0.48,
         top_score_json='[{"score":"1-0","probability":0.12}]',
         weather_json=None,
         adjustments_json='{"adjustments_applied":[]}',

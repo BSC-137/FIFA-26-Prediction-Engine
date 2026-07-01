@@ -15,6 +15,12 @@ def is_world_cup_competition(competition: str) -> bool:
     return "world cup" in competition.lower()
 
 
+def is_knockout_stage(stage: str) -> bool:
+    lowered = stage.lower()
+    keywords = ("round of", "quarter", "semi", "final", "knockout")
+    return any(keyword in lowered for keyword in keywords)
+
+
 def count_team_matches(results: list[MatchResult], team_id: str) -> int:
     count = 0
     for result in results:
@@ -64,13 +70,42 @@ def apply_tournament_scoring_floor(
     return home_xg * scale, away_xg * scale, True
 
 
+def apply_tournament_scoring_prior(
+    home_xg: float,
+    away_xg: float,
+    results: list[MatchResult],
+    weight: float,
+) -> tuple[float, float, bool]:
+    """Blend xG toward the observed tournament goals-per-match rate."""
+    if weight <= 0.0 or len(results) < 5:
+        return home_xg, away_xg, False
+
+    total_goals = sum(match.home_goals + match.away_goals for match in results)
+    observed_per_team = total_goals / (2.0 * len(results))
+    target_total = max(observed_per_team * 2.0, home_xg + away_xg)
+    current_total = home_xg + away_xg
+    if current_total <= 0.0:
+        return home_xg, away_xg, False
+
+    blended_total = (1.0 - weight) * current_total + weight * target_total
+    scale = blended_total / current_total
+    return home_xg * scale, away_xg * scale, True
+
+
+def resolve_scoring_floor(fixture: Fixture, model_config: ModelConfig) -> float:
+    """Pick the stage-appropriate minimum total xG floor."""
+    if is_knockout_stage(fixture.stage):
+        return max(model_config.tournament_min_total_xg, model_config.knockout_min_total_xg)
+    return model_config.tournament_min_total_xg
+
+
 def calibrate_base_xg(
     prediction: FixturePrediction,
     fixture: Fixture,
     results: list[MatchResult],
     model_config: ModelConfig,
 ) -> tuple[float, float, list[str], float]:
-    """Blend Elo, apply host boost and tournament floor; return labels."""
+    """Blend Elo, apply host boost, scoring prior, and tournament floor."""
     labels: list[str] = []
     home_xg = prediction["home_xg"]
     away_xg = prediction["away_xg"]
@@ -97,14 +132,25 @@ def calibrate_base_xg(
     if host_applied > 0.0:
         labels.append(f"host_nation_boost:{host_applied:.2f}")
 
+    home_xg, away_xg, prior_applied = apply_tournament_scoring_prior(
+        home_xg,
+        away_xg,
+        results,
+        model_config.tournament_scoring_prior_weight,
+    )
+    if prior_applied:
+        labels.append(f"tournament_scoring_prior:{model_config.tournament_scoring_prior_weight:.2f}")
+
+    floor = resolve_scoring_floor(fixture, model_config)
     home_xg, away_xg, floor_applied = apply_tournament_scoring_floor(
         home_xg,
         away_xg,
         is_neutral=prediction["is_neutral"],
-        floor=model_config.tournament_min_total_xg,
+        floor=floor,
     )
     if floor_applied:
-        labels.append("tournament_scoring_floor_applied")
+        label = "knockout_scoring_floor_applied" if is_knockout_stage(fixture.stage) else "tournament_scoring_floor_applied"
+        labels.append(label)
 
     return home_xg, away_xg, labels, host_applied
 
@@ -120,9 +166,9 @@ def build_prediction_warnings(
 ) -> list[str]:
     """Auto-generate transparency warnings for low-confidence predictions."""
     warnings: list[str] = []
-    if adjusted_home_xg + adjusted_away_xg < 1.2:
+    if adjusted_home_xg + adjusted_away_xg < 1.8:
         warnings.append("low_total_xg")
-    if draw_probability > 0.45:
+    if draw_probability > 0.42:
         warnings.append("high_draw_probability")
     if home_wc_matches < 2:
         warnings.append("home_sparse_wc_history")

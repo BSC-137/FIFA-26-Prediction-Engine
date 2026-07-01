@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS predictions (
     p_home REAL NOT NULL,
     p_draw REAL NOT NULL,
     p_away REAL NOT NULL,
+    p_btts_yes REAL NOT NULL DEFAULT 0.0,
+    p_over_2_5 REAL NOT NULL DEFAULT 0.0,
     top_score_json TEXT NOT NULL,
     weather_json TEXT,
     adjustments_json TEXT NOT NULL,
@@ -66,6 +68,8 @@ class PredictionRecord:
     weather_json: str | None
     adjustments_json: str
     model_version: str = MODEL_VERSION
+    p_btts_yes: float = 0.0
+    p_over_2_5: float = 0.0
     id: int | None = None
 
 
@@ -107,6 +111,8 @@ def _row_to_record(row: sqlite3.Row) -> PredictionRecord:
         p_home=row["p_home"],
         p_draw=row["p_draw"],
         p_away=row["p_away"],
+        p_btts_yes=float(row["p_btts_yes"]) if row["p_btts_yes"] is not None else 0.0,
+        p_over_2_5=float(row["p_over_2_5"]) if row["p_over_2_5"] is not None else 0.0,
         top_score_json=row["top_score_json"],
         weather_json=row["weather_json"],
         adjustments_json=row["adjustments_json"],
@@ -131,7 +137,17 @@ class PredictionStore:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         with self._lock, self._connect() as conn:
             conn.executescript(_SCHEMA)
+            self._migrate_schema(conn)
             conn.commit()
+
+    @staticmethod
+    def _migrate_schema(conn: sqlite3.Connection) -> None:
+        """Add new ledger columns without breaking existing databases."""
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(predictions)")}
+        if "p_btts_yes" not in columns:
+            conn.execute("ALTER TABLE predictions ADD COLUMN p_btts_yes REAL NOT NULL DEFAULT 0.0")
+        if "p_over_2_5" not in columns:
+            conn.execute("ALTER TABLE predictions ADD COLUMN p_over_2_5 REAL NOT NULL DEFAULT 0.0")
 
     def save_prediction(self, record: PredictionRecord) -> PredictionRecord:
         """Insert the canonical pre-kickoff row for a fixture (no overwrite)."""
@@ -147,9 +163,9 @@ class PredictionStore:
                     fixture_id, generated_at_utc, as_of_utc, kickoff_utc,
                     home_team_id, away_team_id,
                     base_home_xg, base_away_xg, adj_home_xg, adj_away_xg,
-                    p_home, p_draw, p_away,
+                    p_home, p_draw, p_away, p_btts_yes, p_over_2_5,
                     top_score_json, weather_json, adjustments_json, model_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     record.fixture_id,
@@ -165,6 +181,8 @@ class PredictionStore:
                     record.p_home,
                     record.p_draw,
                     record.p_away,
+                    record.p_btts_yes,
+                    record.p_over_2_5,
                     record.top_score_json,
                     record.weather_json,
                     record.adjustments_json,

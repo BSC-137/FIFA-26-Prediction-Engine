@@ -10,8 +10,12 @@ from fifa26_engine.config.model_config import (
     DEFAULT_DIXON_COLES_RHO,
     DEFAULT_ELO_BLEND_WEIGHT,
     DEFAULT_HOST_NATION_BOOST,
+    DEFAULT_KNOCKOUT_DIXON_COLES_RHO,
+    DEFAULT_KNOCKOUT_MIN_TOTAL_XG,
     DEFAULT_MODEL_VERSION,
+    DEFAULT_TIME_DECAY_HALF_LIFE_DAYS,
     DEFAULT_TOURNAMENT_MIN_TOTAL_XG,
+    DEFAULT_TOURNAMENT_SCORING_PRIOR_WEIGHT,
 )
 from fifa26_engine.config.paths import ENV_FILE
 
@@ -164,12 +168,12 @@ class Settings(BaseSettings):
         description="Minimum bucket samples before full weather affinity weight.",
     )
     intercept_prior_goals: float = Field(
-        default=1.35,
+        default=1.45,
         gt=0.0,
         description="Baseline goals rate when no training data is available.",
     )
     time_decay_half_life_days: float = Field(
-        default=0.0,
+        default=DEFAULT_TIME_DECAY_HALF_LIFE_DAYS,
         ge=0.0,
         description="Exponential decay half-life for match weights (0 = disabled).",
     )
@@ -177,6 +181,21 @@ class Settings(BaseSettings):
         default=DEFAULT_TOURNAMENT_MIN_TOTAL_XG,
         ge=0.0,
         description="Minimum total base xG for neutral tournament fixtures (0 = disabled).",
+    )
+    knockout_min_total_xg: float = Field(
+        default=DEFAULT_KNOCKOUT_MIN_TOTAL_XG,
+        ge=0.0,
+        description="Minimum total base xG for knockout fixtures (overrides group floor).",
+    )
+    knockout_dixon_coles_rho: float = Field(
+        default=DEFAULT_KNOCKOUT_DIXON_COLES_RHO,
+        description="Dixon-Coles rho for knockout fixtures (less draw mass than group).",
+    )
+    tournament_scoring_prior_weight: float = Field(
+        default=DEFAULT_TOURNAMENT_SCORING_PRIOR_WEIGHT,
+        ge=0.0,
+        le=1.0,
+        description="Blend weight toward observed tournament scoring rate.",
     )
     elo_blend_weight: float = Field(
         default=DEFAULT_ELO_BLEND_WEIGHT,
@@ -200,6 +219,13 @@ class Settings(BaseSettings):
         if value is None:
             return ""
         return str(value).strip()
+
+    @field_validator("use_mock_data", mode="before")
+    @classmethod
+    def empty_use_mock_data(cls, value: object) -> bool | None:
+        if value is None or value == "":
+            return None
+        return value  # type: ignore[return-value]
 
     @field_validator("dixon_coles_rho", mode="before")
     @classmethod

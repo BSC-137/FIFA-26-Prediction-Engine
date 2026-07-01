@@ -49,6 +49,12 @@ class EvaluatedFixture:
     brier: float
     log_loss: float
     total_goals_error: float
+    predicted_over_2_5: bool
+    actual_over_2_5: bool
+    correct_ou_2_5: bool
+    predicted_btts_yes: bool
+    actual_btts_yes: bool
+    correct_btts: bool
 
 
 @dataclass
@@ -60,6 +66,8 @@ class EvaluationSummary:
     brier_score: float
     log_loss: float
     mae_total_goals: float
+    ou_25_hit_rate: float = 0.0
+    btts_hit_rate: float = 0.0
     calibration_bins: list[CalibrationBin] = field(default_factory=list)
     computed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     model_version: str = ""
@@ -107,7 +115,11 @@ def _calibration_bins(
     for index in range(n_bins):
         start = index / n_bins
         end = (index + 1) / n_bins
-        bucket = [(pred, actual) for pred, actual in pairs if start <= pred < end or (index == n_bins - 1 and pred == 1.0)]
+        bucket = [
+            (pred, actual)
+            for pred, actual in pairs
+            if start <= pred < end or (index == n_bins - 1 and pred == 1.0)
+        ]
         if not bucket:
             bins.append(CalibrationBin(start, end, 0, 0.0, 0.0))
             continue
@@ -131,6 +143,10 @@ def evaluate_fixture(
     predicted = _argmax_outcome(record.p_home, record.p_draw, record.p_away)
     expected_total = record.adj_home_xg + record.adj_away_xg
     actual_total = fixture.home_goals + fixture.away_goals
+    actual_over = actual_total > 2.5
+    actual_btts = fixture.home_goals > 0 and fixture.away_goals > 0
+    predicted_over = record.p_over_2_5 >= 0.5
+    predicted_btts = record.p_btts_yes >= 0.5
 
     return EvaluatedFixture(
         fixture_id=record.fixture_id,
@@ -151,6 +167,12 @@ def evaluate_fixture(
         brier=_brier(record.p_home, record.p_draw, record.p_away, actual),
         log_loss=_log_loss(record.p_home, record.p_draw, record.p_away, actual),
         total_goals_error=abs(expected_total - actual_total),
+        predicted_over_2_5=predicted_over,
+        actual_over_2_5=actual_over,
+        correct_ou_2_5=predicted_over == actual_over,
+        predicted_btts_yes=predicted_btts,
+        actual_btts_yes=actual_btts,
+        correct_btts=predicted_btts == actual_btts,
     )
 
 
@@ -178,6 +200,8 @@ def evaluate_predictions(
             brier_score=0.0,
             log_loss=0.0,
             mae_total_goals=0.0,
+            ou_25_hit_rate=0.0,
+            btts_hit_rate=0.0,
             model_version=records[0].model_version if records else "",
         ), []
 
@@ -186,7 +210,11 @@ def evaluate_predictions(
     brier = sum(item.brier for item in evaluated) / n
     logloss = sum(item.log_loss for item in evaluated) / n
     mae_goals = sum(item.total_goals_error for item in evaluated) / n
-    calibration = _calibration_bins([(item.p_home, 1.0 if item.actual_outcome == "home_win" else 0.0) for item in evaluated])
+    ou_rate = sum(1 for item in evaluated if item.correct_ou_2_5) / n
+    btts_rate = sum(1 for item in evaluated if item.correct_btts) / n
+    calibration = _calibration_bins(
+        [(item.p_home, 1.0 if item.actual_outcome == "home_win" else 0.0) for item in evaluated],
+    )
 
     summary = EvaluationSummary(
         n_matches=n,
@@ -194,6 +222,8 @@ def evaluate_predictions(
         brier_score=brier,
         log_loss=logloss,
         mae_total_goals=mae_goals,
+        ou_25_hit_rate=ou_rate,
+        btts_hit_rate=btts_rate,
         calibration_bins=calibration,
         model_version=records[0].model_version if records else "",
     )

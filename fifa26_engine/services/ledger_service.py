@@ -85,6 +85,8 @@ class LedgerService:
             p_home=markets["home_win"],
             p_draw=markets["draw"],
             p_away=markets["away_win"],
+            p_btts_yes=markets["btts_yes"],
+            p_over_2_5=markets["over_2_5"],
             top_score_json=serialize_json(markets["top_scores"]),
             weather_json=weather_payload,
             adjustments_json=serialize_json(
